@@ -1785,4 +1785,301 @@ public class SystemInitConfig {
 
 ---
 
+## 🎙️ 唤醒词机制深度解析
+
+### 6.1 唤醒词概念澄清
+
+#### 6.1.1 设备端唤醒词 vs 服务端"唤醒词"
+
+**重要概念区分：**
+- **设备端唤醒词**：真正的唤醒功能，在硬件本地检测，用于激活设备
+- **服务端"唤醒词"**：实际是问候语识别系统，用于提供个性化回复
+
+#### 6.1.2 本项目的唤醒词配置
+
+**服务端问候语配置：**
+```yaml
+# config.yaml - 服务端问候语识别
+wakeup_words:
+  - "你好小智"
+  - "嘿你好呀"
+  - "你好小志"
+  - "小爱同学"
+  - "你好小鑫"
+  - "你好小新"
+  - "小美同学"
+  - "小龙小龙"
+  - "喵喵同学"
+  - "小滨小滨"
+  - "小冰小冰"
+
+# 问候语功能开关
+enable_wakeup_words_response_cache: true
+enable_greeting: true
+```
+
+**服务端问候语处理逻辑：**
+```python
+async def checkWakeupWords(conn, text):
+    """检查是否为问候语并提供回复"""
+    _, filtered_text = remove_punctuation_and_length(text)
+    if filtered_text not in conn.config.get("wakeup_words"):
+        return False
+
+    # 标记刚被"唤醒"（实际是问候）
+    conn.just_woken_up = True
+
+    # 播放预设或动态生成的问候回复
+    response = {
+        "voice": "default",
+        "file_path": "config/assets/wakeup_words.wav",
+        "text": "哈啰啊，我是小智啦，声音好听的台湾女孩一枚..."
+    }
+    await sendAudioMessage(conn, SentenceType.FIRST, opus_packets, response.get("text"))
+```
+
+#### 6.1.3 设备端真正唤醒词
+
+**WebSocket协议中的唤醒词检测：**
+```json
+{
+  "session_id": "xxx",
+  "type": "listen",
+  "state": "detect",
+  "text": "你好小明"
+}
+```
+
+**设备端唤醒流程：**
+1. 设备本地检测到唤醒词
+2. 激活设备，建立WebSocket连接
+3. 发送Hello握手消息
+4. 开始语音监听和交互
+
+### 6.2 ESP32-S3 vs 杰理AC791N 唤醒词实现对比
+
+#### 6.2.1 ESP32-S3 唤醒词实现
+
+**技术架构：**
+- **框架**：基于乐鑫ESP-SR（Speech Recognition）开源框架
+- **模型**：WakeNet神经网络模型（目前最新为WakeNet9）
+- **算法**：深度神经网络 + 声学前端处理(AFE)
+- **部署**：TensorFlow Lite for Microcontrollers
+
+**实现特点：**
+```c
+// ESP-SR框架示例
+#include "esp_wn_iface.h"
+#include "esp_wn_models.h"
+
+// 初始化唤醒词检测
+const esp_wn_iface_t *wakenet = &ESP_WN_HILEXIN;
+model_coeff_getter_t *model_coeff_getter = &get_coeff_hilexin_wn9;
+```
+
+**优势：**
+- ✅ **开源生态**：完整的开发框架和文档
+- ✅ **可定制性强**：支持用户自训练模型
+- ✅ **社区支持**：活跃的开发者社区
+- ✅ **成本透明**：无额外授权费用
+
+#### 6.2.2 杰理AC791N 唤醒词实现
+
+**技术架构：**
+- **框架**：杰理私有AI语音识别SDK
+- **硬件**：内置AI加速器和DSP
+- **算法**：商业化神经网络（技术细节不公开）
+- **部署**：厂商预训练模型 + 定制服务
+
+**实现特点：**
+```c
+// 杰理SDK示例（推测）
+#include "jl_ai_voice.h"
+
+// 初始化语音识别
+jl_ai_voice_init();
+jl_ai_set_wakeword_model(CUSTOM_MODEL_ID);
+```
+
+**优势：**
+- ✅ **性能优化**：硬件AI加速，功耗更低
+- ✅ **集成度高**：一站式解决方案
+- ❌ **闭源生态**：技术细节不透明
+- ❌ **定制成本高**：需要付费定制服务
+
+#### 6.2.3 详细技术对比
+
+| 对比维度 | ESP32-S3 | 杰理AC791N |
+|---------|----------|-----------|
+| **开发生态** | 开源，文档丰富 | 闭源，商业支持 |
+| **硬件优势** | 通用MCU，灵活性高 | 专用AI芯片，性能优化 |
+| **功耗表现** | 中等（可优化） | 更低（硬件加速） |
+| **模型大小** | 100KB-500KB | 未公开（预计更小） |
+| **识别精度** | 85-95%（可调优） | 90-98%（厂商优化） |
+| **唤醒延迟** | 200-500ms | 100-300ms |
+| **自定义难度** | 中等（需要ML知识） | 简单（付费服务） |
+| **成本结构** | 芯片成本+开发时间 | 芯片成本+授权费 |
+
+### 6.3 自定义唤醒词实现方案
+
+#### 6.3.1 ESP32-S3 自定义方案
+
+**方案1：Edge Impulse平台（推荐）**
+```bash
+# 1. 数据收集
+录制唤醒词音频：至少500次不同发音
+录制噪声样本：至少200个样本
+录制其他词汇：至少300个样本
+
+# 2. 模型训练
+上传到Edge Impulse平台
+自动特征提取和模型训练
+导出TensorFlow Lite模型
+
+# 3. 部署到ESP32-S3
+转换为ESP-SR兼容格式
+集成到固件中
+```
+
+**技术门槛：** ⭐⭐⭐ (中等)
+**时间成本：** 1-2周
+**资金成本：** 免费（Edge Impulse个人版）
+
+**方案2：自建训练环境**
+```python
+# TensorFlow训练示例
+import tensorflow as tf
+
+# 构建模型
+model = tf.keras.Sequential([
+    tf.keras.layers.Conv1D(64, 3, activation='relu'),
+    tf.keras.layers.GlobalMaxPooling1D(),
+    tf.keras.layers.Dense(32, activation='relu'),
+    tf.keras.layers.Dense(2, activation='softmax')  # 唤醒词/非唤醒词
+])
+
+# 训练模型
+model.compile(optimizer='adam', loss='categorical_crossentropy')
+model.fit(train_data, train_labels, epochs=100)
+
+# 转换为TFLite
+converter = tf.lite.TFLiteConverter.from_keras_model(model)
+tflite_model = converter.convert()
+```
+
+**技术门槛：** ⭐⭐⭐⭐⭐ (很高)
+**时间成本：** 1-3个月
+**资金成本：** 计算资源费用
+
+#### 6.3.2 杰理AC791N 自定义方案
+
+**官方定制服务：**
+```
+1. 联系杰理销售团队
+2. 提供唤醒词需求和音频样本
+3. 杰理进行模型训练和优化
+4. 提供定制固件或模型文件
+5. 支付定制费用和授权费
+```
+
+**技术门槛：** ⭐ (很低，对用户)
+**时间成本：** 2-4周
+**资金成本：** 5万-20万人民币（估计）
+
+### 6.4 成本效益分析
+
+#### 6.4.1 小批量产品（<1000台）
+- **ESP32-S3**：更经济，开发成本可控
+- **杰理AC791N**：定制费用摊销成本高
+
+#### 6.4.2 大批量产品（>10000台）
+- **ESP32-S3**：需要投入更多开发资源
+- **杰理AC791N**：定制费用摊销后更有优势
+
+#### 6.4.3 资源需求对比
+```yaml
+# ESP32-S3轻量级配置
+硬件要求: ESP32-S3 + 2MB Flash
+开发工具: ESP-IDF + Edge Impulse
+总成本: 开发时间 + 芯片成本
+
+# 杰理AC791N商业配置
+硬件要求: AC791N + 定制固件
+开发工具: 杰理SDK + 技术支持
+总成本: 芯片成本 + 5-20万定制费
+```
+
+### 6.5 实际应用建议
+
+#### 6.5.1 选择ESP32-S3的情况
+- 预算有限的创业项目
+- 需要技术自主可控
+- 有一定的AI/ML开发能力
+- 产品迭代频繁
+
+#### 6.5.2 选择杰理AC791N的情况
+- 大批量商业产品
+- 对功耗要求极高
+- 缺乏AI开发团队
+- 追求快速上市
+
+#### 6.5.3 ESP32-S3自定义唤醒词实战步骤
+
+**1. 准备工作**
+```bash
+# 安装必要工具
+pip install edge-impulse-cli
+pip install tensorflow
+git clone https://github.com/espressif/esp-sr.git
+```
+
+**2. 数据收集**
+- 录制目标唤醒词：500-1000次
+- 录制环境噪声：200-500个样本
+- 录制相似词汇：300-500个样本
+- 音频格式：16kHz, 16bit, 单声道
+
+**3. 模型训练**
+- 使用Edge Impulse或TensorFlow
+- 训练时间：几小时到几天
+- 模型大小：控制在200KB以内
+
+**4. 集成部署**
+```c
+// 集成到ESP32-S3项目
+#include "model_data.h"
+
+// 初始化自定义模型
+esp_wn_iface_t *custom_wakenet = create_custom_wakenet(model_data);
+```
+
+### 6.6 唤醒词技术发展趋势
+
+#### 6.6.1 技术演进方向
+- **模型轻量化**：更小的模型尺寸，更低的功耗
+- **多语言支持**：支持更多语言和方言
+- **个性化定制**：用户可自定义个人唤醒词
+- **边缘AI优化**：专用AI芯片的普及
+
+#### 6.6.2 开源vs商业趋势
+- **开源方案**：技术门槛降低，工具链完善
+- **商业方案**：性能优化，一站式服务
+- **混合模式**：开源训练 + 商业优化
+
+### 6.7 总结与建议
+
+#### 6.7.1 核心发现
+1. **概念澄清**：本项目服务端的"唤醒词"实际是问候语识别系统
+2. **真正唤醒**：应在设备端实现，用于激活设备建立连接
+3. **技术选择**：ESP32-S3适合技术型团队，杰理AC791N适合商业化产品
+4. **成本考量**：小批量选ESP32-S3，大批量可考虑杰理AC791N
+
+#### 6.7.2 实施建议
+- **入门推荐**：ESP32-S3 + Edge Impulse，成本低且技术可控
+- **商业应用**：根据批量和预算选择合适方案
+- **技术储备**：建议掌握开源方案，保持技术自主性
+- **长远规划**：关注边缘AI芯片发展，适时升级技术方案
+
+---
+
 *本文档基于对xiaozhi-esp32-server项目源码的深入分析整理而成，涵盖了项目的核心技术要点、实际应用指导以及完整的压力测试解决方案。*
