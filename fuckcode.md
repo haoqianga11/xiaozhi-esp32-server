@@ -1148,4 +1148,641 @@ python run_stress_test.py --type extreme
 
 ---
 
+## 💾 数据存储与管理深度分析
+
+### 5.1 数据存储架构概览
+
+#### 5.1.1 整体架构设计
+项目采用**多层数据存储架构**，结合关系型数据库和内存缓存，实现高性能的数据管理：
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    应用层 (Spring Boot)                      │
+├─────────────────────────────────────────────────────────────┤
+│                数据访问层 (MyBatis-Plus)                     │
+├─────────────────────────────────────────────────────────────┤
+│           缓存层 (Redis)          │      持久化层 (MySQL)     │
+│  ┌─────────────────────────────┐  │  ┌─────────────────────┐ │
+│  │ • 配置缓存                   │  │  │ • 用户数据           │ │
+│  │ • 会话缓存                   │  │  │ • 设备信息           │ │
+│  │ • 模型配置缓存               │  │  │ • 智能体配置         │ │
+│  │ • 验证码缓存                 │  │  │ • 对话历史           │ │
+│  │ • 统计数据缓存               │  │  │ • 模型配置           │ │
+│  └─────────────────────────────┘  │  └─────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 5.1.2 核心技术栈
+- **MySQL 8.0+**: 主要关系型数据库，存储持久化数据
+- **Redis**: 高性能内存数据库，用于缓存和会话管理
+- **MyBatis-Plus**: ORM框架，简化数据库操作
+- **Druid**: 数据库连接池，提供监控和性能优化
+- **Liquibase**: 数据库版本控制和迁移工具
+
+### 5.2 MySQL数据库设计
+
+#### 5.2.1 数据库配置
+```yaml
+# application-dev.yml
+spring:
+  datasource:
+    druid:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://127.0.0.1:3306/xiaozhi_esp32_server?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true
+      username: root
+      password: 123456
+      # 连接池配置
+      initial-size: 10          # 初始连接数
+      max-active: 100           # 最大连接数
+      min-idle: 10              # 最小空闲连接数
+      max-wait: 6000            # 获取连接最大等待时间
+      # 性能优化配置
+      pool-prepared-statements: true
+      max-pool-prepared-statement-per-connection-size: 20
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+```
+
+#### 5.2.2 核心数据表结构
+
+**系统管理表**
+```sql
+-- 系统用户表
+CREATE TABLE sys_user (
+  id bigint NOT NULL COMMENT 'id',
+  username varchar(50) NOT NULL COMMENT '用户名',
+  password varchar(100) COMMENT '密码',
+  super_admin tinyint unsigned COMMENT '超级管理员 0：否 1：是',
+  status tinyint COMMENT '状态 0：停用 1：正常',
+  create_date datetime COMMENT '创建时间',
+  updater bigint COMMENT '更新者',
+  creator bigint COMMENT '创建者',
+  update_date datetime COMMENT '更新时间',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_username (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统用户';
+
+-- 系统参数表
+CREATE TABLE sys_params (
+  id bigint NOT NULL AUTO_INCREMENT,
+  param_code varchar(32) COMMENT '参数编码',
+  param_value varchar(2000) COMMENT '参数值',
+  value_type varchar(16) COMMENT '参数类型',
+  param_type tinyint DEFAULT 1 COMMENT '类型 0：系统参数 1：非系统参数',
+  remark varchar(200) COMMENT '备注',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_param_code (param_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='参数管理';
+```
+
+**AI模型配置表**
+```sql
+-- 模型配置表
+CREATE TABLE ai_model_config (
+    id VARCHAR(32) NOT NULL COMMENT '主键',
+    model_type VARCHAR(20) COMMENT '模型类型(Memory/ASR/VAD/LLM/TTS)',
+    model_code VARCHAR(50) COMMENT '模型编码(如AliLLM、DoubaoTTS)',
+    model_name VARCHAR(50) COMMENT '模型名称',
+    is_default TINYINT(1) DEFAULT 0 COMMENT '是否默认配置(0否 1是)',
+    is_enabled TINYINT(1) DEFAULT 0 COMMENT '是否启用',
+    config_json JSON COMMENT '模型配置(JSON格式)',
+    doc_link VARCHAR(200) COMMENT '官方文档链接',
+    remark VARCHAR(255) COMMENT '备注',
+    sort INT UNSIGNED DEFAULT 0 COMMENT '排序',
+    creator BIGINT COMMENT '创建者',
+    create_date DATETIME COMMENT '创建时间',
+    updater BIGINT COMMENT '更新者',
+    update_date DATETIME COMMENT '更新时间',
+    PRIMARY KEY (id),
+    INDEX idx_ai_model_config_model_type (model_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='模型配置表';
+
+-- TTS音色表
+CREATE TABLE ai_tts_voice (
+    id VARCHAR(32) NOT NULL COMMENT '主键',
+    tts_model_id VARCHAR(32) COMMENT '对应TTS模型主键',
+    name VARCHAR(20) COMMENT '音色名称',
+    tts_voice VARCHAR(50) COMMENT '音色编码',
+    languages VARCHAR(50) COMMENT '语言',
+    voice_demo VARCHAR(500) DEFAULT NULL COMMENT '音色Demo',
+    remark VARCHAR(255) COMMENT '备注',
+    sort INT UNSIGNED DEFAULT 0 COMMENT '排序',
+    PRIMARY KEY (id),
+    INDEX idx_ai_tts_voice_tts_model_id (tts_model_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='TTS音色表';
+```
+
+**智能体与设备表**
+```sql
+-- 智能体配置表
+CREATE TABLE ai_agent (
+    id VARCHAR(32) NOT NULL COMMENT '智能体唯一标识',
+    user_id BIGINT COMMENT '所属用户ID',
+    agent_code VARCHAR(36) COMMENT '智能体编码',
+    agent_name VARCHAR(64) COMMENT '智能体名称',
+    asr_model_id VARCHAR(32) COMMENT '语音识别模型标识',
+    vad_model_id VARCHAR(64) COMMENT '语音活动检测标识',
+    llm_model_id VARCHAR(32) COMMENT '大语言模型标识',
+    vllm_model_id VARCHAR(32) COMMENT '视觉模型标识',
+    tts_model_id VARCHAR(32) COMMENT '语音合成模型标识',
+    tts_voice_id VARCHAR(32) COMMENT '音色标识',
+    mem_model_id VARCHAR(32) COMMENT '记忆模型标识',
+    intent_model_id VARCHAR(32) COMMENT '意图模型标识',
+    system_prompt TEXT COMMENT '角色设定参数',
+    lang_code VARCHAR(10) COMMENT '语言编码',
+    language VARCHAR(10) COMMENT '交互语种',
+    sort INT UNSIGNED DEFAULT 0 COMMENT '排序权重',
+    PRIMARY KEY (id),
+    INDEX idx_ai_agent_user_id (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='智能体配置表';
+
+-- 设备信息表
+CREATE TABLE ai_device (
+    id VARCHAR(32) NOT NULL COMMENT '设备唯一标识',
+    user_id BIGINT COMMENT '关联用户ID',
+    mac_address VARCHAR(50) COMMENT 'MAC地址',
+    last_connected_at DATETIME COMMENT '最后连接时间',
+    auto_update TINYINT UNSIGNED DEFAULT 0 COMMENT '自动更新开关(0关闭/1开启)',
+    board VARCHAR(50) COMMENT '设备硬件型号',
+    alias VARCHAR(64) DEFAULT NULL COMMENT '设备别名',
+    agent_id VARCHAR(32) COMMENT '智能体ID',
+    app_version VARCHAR(20) COMMENT '固件版本号',
+    sort INT UNSIGNED DEFAULT 0 COMMENT '排序',
+    PRIMARY KEY (id),
+    INDEX idx_ai_device_created_at (mac_address)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备信息表';
+```
+
+**对话与交互表**
+```sql
+-- 智能体聊天记录表
+CREATE TABLE ai_agent_chat_history (
+    id BIGINT AUTO_INCREMENT COMMENT '主键ID' PRIMARY KEY,
+    mac_address VARCHAR(50) COMMENT 'MAC地址',
+    agent_id VARCHAR(32) COMMENT '智能体id',
+    session_id VARCHAR(50) COMMENT '会话ID',
+    chat_type TINYINT(3) COMMENT '消息类型: 1-用户, 2-智能体',
+    content VARCHAR(1024) COMMENT '聊天内容',
+    audio_id VARCHAR(32) COMMENT '音频ID',
+    created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) NOT NULL,
+    updated_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) NOT NULL ON UPDATE CURRENT_TIMESTAMP(3),
+    INDEX idx_ai_agent_chat_history_mac (mac_address),
+    INDEX idx_ai_agent_chat_history_agent (agent_id),
+    INDEX idx_ai_agent_chat_history_session (session_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='智能体聊天记录表';
+
+-- 声纹识别表
+CREATE TABLE ai_voiceprint (
+    id VARCHAR(32) NOT NULL COMMENT '声纹唯一标识',
+    name VARCHAR(64) COMMENT '声纹名称',
+    user_id BIGINT COMMENT '用户ID（关联用户表）',
+    agent_id VARCHAR(32) COMMENT '关联智能体ID',
+    agent_code VARCHAR(36) COMMENT '关联智能体编码',
+    agent_name VARCHAR(36) COMMENT '关联智能体名称',
+    description VARCHAR(255) COMMENT '声纹描述',
+    embedding LONGTEXT COMMENT '声纹特征向量（JSON数组格式）',
+    memory TEXT COMMENT '关联记忆数据',
+    sort INT UNSIGNED DEFAULT 0 COMMENT '排序权重',
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='声纹识别表';
+```
+
+#### 5.2.3 数据库设计特点
+
+**字符集与排序规则**
+- **字符集**: `utf8mb4` - 支持完整的UTF-8字符集，包括emoji
+- **排序规则**: `utf8mb4_unicode_ci` - 大小写不敏感的Unicode排序
+
+**主键策略**
+- **系统表**: 使用`BIGINT AUTO_INCREMENT`自增主键
+- **业务表**: 使用`VARCHAR(32)`的UUID主键，通过MyBatis-Plus的`ASSIGN_UUID`策略生成
+
+**索引设计**
+- **单列索引**: 针对频繁查询的字段（如`mac_address`、`user_id`）
+- **复合索引**: 针对多条件查询（如`user_id + chat_id`）
+- **时间索引**: 针对按时间排序的查询（如`create_date`）
+
+### 5.3 Redis缓存策略
+
+#### 5.3.1 Redis配置
+```yaml
+# application-dev.yml
+spring:
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      password:                    # 默认无密码
+      database: 0                  # 使用数据库0
+      timeout: 10000ms            # 连接超时时间
+      lettuce:
+        pool:
+          max-active: 8           # 连接池最大连接数
+          max-idle: 8             # 连接池中的最大空闲连接
+          min-idle: 0             # 连接池中的最小空闲连接
+        shutdown-timeout: 100ms   # 客户端优雅关闭等待时间
+```
+
+#### 5.3.2 缓存键命名规范
+项目采用统一的缓存键命名规范，通过`RedisKeys`类集中管理：
+
+```java
+public class RedisKeys {
+    // 系统配置相关
+    public static String getSysParamsKey() { return "sys:params"; }
+    public static String getVersionKey() { return "sys:version"; }
+    public static String getServerConfigKey() { return "server:config"; }
+
+    // 验证码相关
+    public static String getCaptchaKey(String uuid) { return "sys:captcha:" + uuid; }
+    public static String getDeviceCaptchaKey(String captcha) { return "sys:device:captcha:" + captcha; }
+
+    // 模型配置相关
+    public static String getModelNameById(String id) { return "model:name:" + id; }
+    public static String getModelConfigById(String id) { return "model:data:" + id; }
+
+    // 智能体相关
+    public static String getAgentDeviceCountById(String id) { return "agent:device:count:" + id; }
+    public static String getAgentDeviceLastConnectedAtById(String id) { return "agent:device:lastConnected:" + id; }
+    public static String getAgentAudioIdKey(String uuid) { return "agent:audio:id:" + uuid; }
+
+    // 音色相关
+    public static String getTimbreNameById(String id) { return "timbre:name:" + id; }
+    public static String getTimbreDetailsKey(String id) { return "timbre:details:" + id; }
+
+    // 字典数据相关
+    public static String getDictDataByTypeKey(String dictType) { return "sys:dict:data:" + dictType; }
+
+    // OTA相关
+    public static String getOtaIdKey(String uuid) { return "ota:id:" + uuid; }
+    public static String getOtaDownloadCountKey(String uuid) { return "ota:download:count:" + uuid; }
+}
+```
+
+#### 5.3.3 缓存过期策略
+```java
+public class RedisUtils {
+    // 过期时间常量
+    public final static long DEFAULT_EXPIRE = 60 * 60 * 24L;    // 24小时
+    public final static long HOUR_ONE_EXPIRE = 60 * 60L;        // 1小时
+    public final static long HOUR_SIX_EXPIRE = 60 * 60 * 6L;    // 6小时
+    public final static long NOT_EXPIRE = -1L;                  // 不过期
+}
+```
+
+#### 5.3.4 缓存使用场景
+
+**配置数据缓存**
+```java
+@Override
+public Object getConfig(Boolean isCache) {
+    if (isCache) {
+        // 先从Redis获取配置
+        Object cachedConfig = redisUtils.get(RedisKeys.getServerConfigKey());
+        if (cachedConfig != null) {
+            return cachedConfig;
+        }
+    }
+
+    // 构建配置信息
+    Map<String, Object> result = new HashMap<>();
+    buildConfig(result);
+
+    // 将配置存入Redis
+    redisUtils.set(RedisKeys.getServerConfigKey(), result);
+    return result;
+}
+```
+
+**字典数据缓存**
+```java
+@Override
+public List<SysDictDataItem> getDictDataByType(String dictType) {
+    // 先从Redis获取缓存
+    String key = RedisKeys.getDictDataByTypeKey(dictType);
+    List<SysDictDataItem> cachedData = (List<SysDictDataItem>) redisUtils.get(key);
+    if (cachedData != null) {
+        return cachedData;
+    }
+
+    // 从数据库获取并缓存
+    List<SysDictDataItem> data = baseDao.getDictDataByType(dictType);
+    if (data != null) {
+        redisUtils.set(key, data);
+    }
+    return data;
+}
+```
+
+**设备状态缓存**
+```java
+@Override
+public Date getLatestLastConnectionTime(String agentId) {
+    // 查询缓存
+    Date cachedDate = (Date) redisUtils.get(RedisKeys.getAgentDeviceLastConnectedAtById(agentId));
+    if (cachedDate != null) {
+        return cachedDate;
+    }
+
+    // 从数据库查询并缓存
+    Date maxDate = deviceDao.getAllLastConnectedAtByAgentId(agentId);
+    if (maxDate != null) {
+        redisUtils.set(RedisKeys.getAgentDeviceLastConnectedAtById(agentId), maxDate);
+    }
+    return maxDate;
+}
+```
+
+#### 5.3.5 缓存序列化配置
+```java
+@Configuration
+public class RedisConfig {
+    @Bean
+    public RedisTemplate<String, Object> redisTemplate() {
+        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+        // 键序列化：字符串
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        // 值序列化：JSON
+        redisTemplate.setValueSerializer(RedisSerializer.json());
+        // Hash键序列化：字符串
+        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
+        // Hash值序列化：JSON
+        redisTemplate.setHashValueSerializer(RedisSerializer.json());
+        redisTemplate.setConnectionFactory(factory);
+        return redisTemplate;
+    }
+}
+```
+
+#### 5.3.6 缓存一致性保证
+
+**版本控制机制**
+```java
+@PostConstruct
+public void init() {
+    // 检查版本号
+    String redisVersion = (String) redisUtils.get(RedisKeys.getVersionKey());
+    if (!Constant.VERSION.equals(redisVersion)) {
+        // 如果版本不一致，清空Redis
+        redisUtils.emptyAll();
+        // 存储新版本号
+        redisUtils.set(RedisKeys.getVersionKey(), Constant.VERSION);
+    }
+}
+```
+
+**缓存切面处理**
+```java
+@Aspect
+@Component
+public class RedisAspect {
+    @Value("${renren.redis.open}")
+    private boolean open;
+
+    @Around("execution(* xiaozhi.common.redis.RedisUtils.*(..))")
+    public Object around(ProceedingJoinPoint point) throws Throwable {
+        Object result = null;
+        if (open) {
+            try {
+                result = point.proceed();
+            } catch (Exception e) {
+                log.error("redis error", e);
+                throw new RenException(ErrorCode.REDIS_ERROR);
+            }
+        }
+        return result;
+    }
+}
+```
+
+### 5.4 数据访问层设计
+
+#### 5.4.1 MyBatis-Plus配置
+```java
+@Configuration
+public class MybatisPlusConfig {
+    @Bean
+    public MybatisPlusInterceptor mybatisPlusInterceptor() {
+        MybatisPlusInterceptor mybatisPlusInterceptor = new MybatisPlusInterceptor();
+        // 数据权限
+        mybatisPlusInterceptor.addInnerInterceptor(new DataFilterInterceptor());
+        // 分页插件
+        mybatisPlusInterceptor.addInnerInterceptor(new PaginationInnerInterceptor());
+        // 乐观锁
+        mybatisPlusInterceptor.addInnerInterceptor(new OptimisticLockerInnerInterceptor());
+        // 防止全表更新与删除
+        mybatisPlusInterceptor.addInnerInterceptor(new BlockAttackInnerInterceptor());
+        return mybatisPlusInterceptor;
+    }
+}
+```
+
+#### 5.4.2 实体类设计
+```java
+// 基础实体类
+@Data
+public abstract class BaseEntity implements Serializable {
+    @TableId
+    private Long id;
+
+    @TableField(fill = FieldFill.INSERT)
+    private Long creator;
+
+    @TableField(fill = FieldFill.INSERT)
+    private Date createDate;
+}
+
+// 设备实体类
+@Data
+@EqualsAndHashCode(callSuper = false)
+@TableName("ai_device")
+@Schema(description = "设备信息")
+public class DeviceEntity {
+    @TableId(type = IdType.ASSIGN_UUID)
+    @Schema(description = "ID")
+    private String id;
+
+    @Schema(description = "关联用户ID")
+    private Long userId;
+
+    @Schema(description = "MAC地址")
+    private String macAddress;
+
+    @Schema(description = "最后连接时间")
+    private Date lastConnectedAt;
+
+    @Schema(description = "自动更新开关(0关闭/1开启)")
+    private Integer autoUpdate;
+
+    @Schema(description = "设备硬件型号")
+    private String board;
+
+    @Schema(description = "设备别名")
+    private String alias;
+
+    @Schema(description = "智能体ID")
+    private String agentId;
+
+    @Schema(description = "固件版本号")
+    private String appVersion;
+
+    @Schema(description = "排序")
+    private Integer sort;
+}
+```
+
+#### 5.4.3 数据访问接口
+```java
+// 基础DAO接口
+public interface BaseDao<T> extends BaseMapper<T> {
+}
+
+// 设备DAO接口
+@Mapper
+public interface DeviceDao extends BaseMapper<DeviceEntity> {
+    /**
+     * 获取此智能体全部设备的最后连接时间
+     */
+    Date getAllLastConnectedAtByAgentId(String agentId);
+}
+
+// 字典数据DAO接口
+@Mapper
+public interface SysDictDataDao extends BaseDao<SysDictDataEntity> {
+    List<SysDictDataItem> getDictDataByType(String dictType);
+    String getTypeByTypeId(Long dictTypeId);
+}
+```
+
+#### 5.4.4 自动填充机制
+```java
+@Component
+public class FieldMetaObjectHandler implements MetaObjectHandler {
+    @Override
+    public void insertFill(MetaObject metaObject) {
+        // 创建时间自动填充
+        this.strictInsertFill(metaObject, "createDate", Date.class, new Date());
+        // 创建者自动填充
+        this.strictInsertFill(metaObject, "creator", Long.class, getUserId());
+    }
+
+    @Override
+    public void updateFill(MetaObject metaObject) {
+        // 更新时间自动填充
+        this.strictUpdateFill(metaObject, "updateDate", Date.class, new Date());
+        // 更新者自动填充
+        this.strictUpdateFill(metaObject, "updater", Long.class, getUserId());
+    }
+}
+```
+
+### 5.5 数据库版本控制与迁移
+
+#### 5.5.1 Liquibase配置
+```yaml
+# application.yml
+spring:
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    enabled: true
+```
+
+#### 5.5.2 迁移文件管理
+```yaml
+# db.changelog-master.yaml
+databaseChangeLog:
+  - changeSet:
+      id: 202503141335
+      author: John
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202503141335.sql
+  - changeSet:
+      id: 202503141346
+      author: czc
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202503141346.sql
+```
+
+#### 5.5.3 迁移规范
+- **ID生成规则**: 根据时间时分生成，格式为`YYYYMMDDHHMM`
+- **文件命名**: 与changeSet的ID对应
+- **变更原则**: 只允许新建changeSet，不允许修改已有的changeSet
+- **编码格式**: 统一使用UTF-8编码
+
+#### 5.5.4 系统初始化
+```java
+@Configuration
+@DependsOn("liquibase")
+public class SystemInitConfig {
+    @Autowired
+    private SysParamsService sysParamsService;
+
+    @Autowired
+    private ConfigService configService;
+
+    @Autowired
+    private RedisUtils redisUtils;
+
+    @PostConstruct
+    public void init() {
+        // 检查版本号
+        String redisVersion = (String) redisUtils.get(RedisKeys.getVersionKey());
+        if (!Constant.VERSION.equals(redisVersion)) {
+            // 如果版本不一致，清空Redis
+            redisUtils.emptyAll();
+            // 存储新版本号
+            redisUtils.set(RedisKeys.getVersionKey(), Constant.VERSION);
+        }
+
+        // 初始化系统参数
+        sysParamsService.initServerSecret();
+        // 初始化配置
+        configService.getConfig(false);
+    }
+}
+```
+
+### 5.6 数据存储性能优化
+
+#### 5.6.1 连接池优化
+- **初始连接数**: 10个，保证基本并发需求
+- **最大连接数**: 100个，支持高并发场景
+- **连接验证**: 空闲时验证，避免连接超时
+- **预编译语句**: 启用预编译语句池，提升SQL执行效率
+
+#### 5.6.2 缓存策略优化
+- **分层缓存**: 配置数据长期缓存，会话数据短期缓存
+- **缓存预热**: 系统启动时预加载热点数据
+- **缓存穿透防护**: 通过Redis切面处理异常情况
+- **版本控制**: 通过版本号机制保证缓存一致性
+
+#### 5.6.3 数据库查询优化
+- **索引设计**: 针对高频查询字段建立合适索引
+- **分页查询**: 使用MyBatis-Plus分页插件
+- **批量操作**: 支持批量插入和更新操作
+- **慢查询监控**: 通过Druid监控慢SQL
+
+### 5.7 数据安全与备份
+
+#### 5.7.1 数据安全措施
+- **密码加密**: 用户密码使用BCrypt加密存储
+- **SQL注入防护**: 使用预编译语句防止SQL注入
+- **XSS防护**: 通过XssFilter过滤恶意脚本
+- **数据权限**: 通过DataFilter实现数据范围控制
+
+#### 5.7.2 备份策略
+- **Docker数据卷**: 数据库数据持久化到宿主机
+- **定期备份**: 建议定期备份MySQL数据
+- **Redis持久化**: 配置RDB和AOF双重持久化
+- **配置备份**: 重要配置文件版本控制
+
+---
+
 *本文档基于对xiaozhi-esp32-server项目源码的深入分析整理而成，涵盖了项目的核心技术要点、实际应用指导以及完整的压力测试解决方案。*
