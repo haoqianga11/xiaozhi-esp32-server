@@ -712,6 +712,125 @@ int ring_buffer_read(ring_buffer_t* rb, uint8_t* data, size_t len);
 | DoubaoTTS | 云端 | 高质量、情感丰富 | 按字符计费 | 商业应用 |
 | FishSpeech | 本地 | 声音克隆 | 无 | 个性化 |
 
+#### ASR（语音识别）服务
+| 服务商 | 类型 | 特点 | 算力要求 | 推荐场景 |
+|-------|------|------|----------|---------|
+| FunASR | 本地 | 免费、中文优化 | 2GB+内存 | 隐私保护 |
+| SherpaASR | 本地 | 开源、ONNX | 2GB+内存 | 离线部署 |
+| DoubaoASR | 云端 | 高精度、多语言 | 无 | 商业应用 |
+| TencentASR | 云端 | 稳定、企业级 | 无 | 企业应用 |
+
+### AI服务集成机制深度解析
+
+#### 1. Provider模式架构
+xiaozhi-esp32-server采用经典的**Provider模式**来实现AI服务集成，这是整个项目的核心设计亮点：
+
+**设计原理：**
+- **抽象基类定义**：每种AI服务类型都有对应的抽象基类（ASR、TTS、LLM、VAD、Intent、Memory、VLLM）
+- **统一接口规范**：所有同类服务必须实现相同的接口方法
+- **工厂模式创建**：通过工厂方法动态创建具体服务实例
+- **配置驱动选择**：通过YAML配置文件灵活切换服务提供商
+
+**核心优势：**
+```python
+# 统一的调用方式，无需关心底层实现
+asr_result = await asr_provider.speech_to_text(audio_data)
+tts_audio = await tts_provider.text_to_speak(text)
+llm_response = llm_provider.response(dialogue)
+```
+
+#### 2. 本地模型 vs 云端服务
+
+**ASR本地模型详解：**
+- **FunASR（SenseVoiceSmall）**：
+  - 内存要求：最低2GB，推荐4GB+
+  - 模型大小：约500MB-1GB
+  - 支持GPU加速（CUDA）
+  - 完全开源免费，基于阿里达摩院
+  - 自动从ModelScope下载模型文件
+
+- **SherpaASR**：
+  - 基于ONNX运行时，跨平台兼容
+  - 支持多语言（中英日韩粤）
+  - 轻量化部署，资源占用较低
+  - 开源免费，社区维护
+
+**TTS服务澄清：**
+- **Edge TTS ≠ 操作系统TTS**
+- Edge TTS是微软Edge浏览器的在线TTS服务
+- 通过网络API调用，需要互联网连接
+- 项目中没有实现真正的操作系统原生TTS（如Windows SAPI、macOS Speech Synthesis）
+
+#### 3. 配置管理机制
+
+**多层配置合并：**
+```yaml
+# 1. 默认配置 (config.yaml)
+selected_module:
+  ASR: FunASR
+  LLM: ChatGLMLLM
+  TTS: EdgeTTS
+
+# 2. 用户配置 (data/.config.yaml)
+ASR:
+  FunASR:
+    type: fun_local
+    model_dir: models/SenseVoiceSmall
+    output_dir: tmp/
+
+# 3. API配置（支持从管理API动态获取）
+manager-api:
+  url: "https://your-api.com"
+  token: "your-token"
+```
+
+**工厂模式实现：**
+```python
+def create_instance(class_name: str, *args, **kwargs) -> ASRProviderBase:
+    """工厂方法创建ASR实例"""
+    if os.path.exists(os.path.join('core', 'providers', 'asr', f'{class_name}.py')):
+        lib_name = f'core.providers.asr.{class_name}'
+        if lib_name not in sys.modules:
+            sys.modules[lib_name] = importlib.import_module(f'{lib_name}')
+        return sys.modules[lib_name].ASRProvider(*args, **kwargs)
+
+    raise ValueError(f"不支持的ASR类型: {class_name}")
+```
+
+#### 4. 服务类型全景
+
+**支持的AI服务矩阵：**
+
+| 服务类型 | 本地部署 | 云端API | 开源免费 | 商业服务 |
+|---------|----------|---------|----------|----------|
+| **ASR** | FunASR, SherpaASR | DoubaoASR, TencentASR | ✅ | ✅ |
+| **LLM** | Ollama, ChatGLM | OpenAI, DoubaoLLM | ✅ | ✅ |
+| **TTS** | FishSpeech, GPT-SoVITS | EdgeTTS, DoubaoTTS | ✅ | ✅ |
+| **VLLM** | 本地部署 | OpenAI兼容API | ✅ | ✅ |
+| **VAD** | SileroVAD | - | ✅ | - |
+
+#### 5. 性能与成本优化
+
+**资源需求对比：**
+```yaml
+# 轻量级配置（适合个人开发）
+ASR: FunASR          # 本地2GB内存
+LLM: ChatGLMLLM      # 免费API额度
+TTS: EdgeTTS         # 完全免费
+总成本: 0元/月 + 服务器成本
+
+# 高性能配置（适合商业应用）
+ASR: DoubaoStreamASR # 流式识别，低延迟
+LLM: DoubaoLLM       # 高质量模型
+TTS: LinkeraiTTS     # 流式合成
+总成本: 约100-500元/月
+```
+
+**算力要求总结：**
+- **纯云端方案**：服务器只需1-2GB内存，主要处理WebSocket连接
+- **混合方案**：本地ASR需要2-4GB内存，其他服务使用云端API
+- **全本地方案**：需要8GB+内存，GPU加速推荐
+
 ### 配置灵活性设计
 
 #### 1. 模块化配置
