@@ -183,3 +183,7 @@ uploadfile
 !main/manager-mobile/**/env/
 !main/manager-mobile/**/.env*
 !main/manager-mobile/**/*.json
+
+# local ignore
+/xiaozhi-server/
+/.augment/
