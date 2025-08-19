@@ -128,7 +128,7 @@ def initialize_asr(config):
     logger.bind(tag=TAG).info("ASR模块初始化完成")
     return new_asr
 
-
+# 连接时动态调用（动态启用可选的高级功能，按需加载），是为每个连接实例
 def initialize_voiceprint(asr_instance, config):
     """初始化声纹识别功能"""
     voiceprint_config = config.get("voiceprint")
