@@ -1,0 +1,471 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2025-09-16T14:35:00.000Z" agent="drawio" etag="xxx" version="24.7.17">
+  <diagram name="manager-web业务架构" id="manager-web-business">
+    <mxGraphModel dx="1422" dy="899" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="2339" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- 标题 -->
+        <mxCell id="title" value="manager-web 业务实现架构图" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="577" y="40" width="500" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Vue.js 主应用 -->
+        <mxCell id="main-app" value="Vue.js SPA应用&#xa;• Vue 2.6.14 + Element UI&#xa;• Vuex状态管理 + Vue Router&#xa;• 响应式Web管理平台" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="627" y="120" width="400" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- 视图层 -->
+        <mxCell id="views-layer" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;opacity=30;" vertex="1" parent="1">
+          <mxGeometry x="80" y="240" width="1500" height="280" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="views-title" value="视图层 (Views & Pages)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="740" y="250" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Login View -->
+        <mxCell id="login-view" value="login.vue&#xa;用户登录页面&#xa;• 登录表单&#xa;• 验证码验证&#xa;• Token获取" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="120" y="300" width="160" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Register View -->
+        <mxCell id="register-view" value="register.vue&#xa;用户注册页面&#xa;• 注册表单&#xa;• 手机验证&#xa;• 密码设置" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="300" y="300" width="160" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Home View -->
+        <mxCell id="home-view" value="home.vue&#xa;智能体管理主页&#xa;• 智能体列表&#xa;• 搜索过滤&#xa;• 操作入口" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="480" y="300" width="160" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Role Config View -->
+        <mxCell id="roleconfig-view" value="roleConfig.vue&#xa;角色配置页面&#xa;• 智能体设置&#xa;• 参数配置&#xa;• 功能定制" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="660" y="300" width="160" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Device Management -->
+        <mxCell id="device-management" value="DeviceManagement.vue&#xa;设备管理页面&#xa;• 设备列表&#xa;• 设备绑定&#xa;• 状态监控" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="840" y="300" width="160" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Model Config -->
+        <mxCell id="model-config" value="ModelConfig.vue&#xa;模型配置页面&#xa;• AI模型管理&#xa;• 参数设置&#xa;• 提供商配置" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="300" width="160" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- User Management -->
+        <mxCell id="user-management" value="UserManagement.vue&#xa;用户管理页面&#xa;• 用户列表&#xa;• 权限管理&#xa;• 账户操作" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="300" width="160" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- System Management -->
+        <mxCell id="system-management" value="系统管理页面&#xa;• ParamsManagement&#xa;• OtaManagement&#xa;• DictManagement&#xa;• ProviderManagement" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="300" width="180" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- 组件层 -->
+        <mxCell id="components-layer" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;opacity=30;" vertex="1" parent="1">
+          <mxGeometry x="80" y="560" width="1500" height="280" as="geometry" />
+        </mxCell>
+
+        <mxCell id="components-title" value="组件层 (Components)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="740" y="570" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Header Bar -->
+        <mxCell id="header-bar" value="HeaderBar.vue&#xa;顶部导航栏&#xa;• 导航菜单&#xa;• 用户信息&#xa;• 语言切换&#xa;• 搜索功能" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1ffc7;strokeColor=#67ab36;" vertex="1" parent="1">
+          <mxGeometry x="120" y="620" width="140" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- Device Item -->
+        <mxCell id="device-item" value="DeviceItem.vue&#xa;设备卡片组件&#xa;• 设备信息展示&#xa;• 操作按钮&#xa;• 状态指示" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1ffc7;strokeColor=#67ab36;" vertex="1" parent="1">
+          <mxGeometry x="300" y="620" width="140" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- Dialog Components -->
+        <mxCell id="dialog-components" value="对话框组件&#xa;• AddWisdomBodyDialog&#xa;• AddDeviceDialog&#xa;• EditVoiceDialog&#xa;• ChatHistoryDialog" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1ffc7;strokeColor=#67ab36;" vertex="1" parent="1">
+          <mxGeometry x="480" y="620" width="160" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- Form Components -->
+        <mxCell id="form-components" value="表单组件&#xa;• ParamDialog&#xa;• ModelEditDialog&#xa;• ProviderDialog&#xa;• DictDataDialog" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1ffc7;strokeColor=#67ab36;" vertex="1" parent="1">
+          <mxGeometry x="680" y="620" width="140" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- Audio Components -->
+        <mxCell id="audio-components" value="音频组件&#xa;• AudioPlayer&#xa;• VoicePrintDialog&#xa;• TtsModel&#xa;• 录音播放功能" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1ffc7;strokeColor=#67ab36;" vertex="1" parent="1">
+          <mxGeometry x="860" y="620" width="140" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- Security Components -->
+        <mxCell id="security-components" value="安全组件&#xa;• ChangePasswordDialog&#xa;• ViewPasswordDialog&#xa;• 验证码组件" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1ffc7;strokeColor=#67ab36;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="620" width="140" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- System Components -->
+        <mxCell id="system-components" value="系统组件&#xa;• FirmwareDialog&#xa;• CacheViewer&#xa;• VersionFooter&#xa;• FunctionDialog" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1ffc7;strokeColor=#67ab36;" vertex="1" parent="1">
+          <mxGeometry x="1220" y="620" width="140" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- Manual Components -->
+        <mxCell id="manual-components" value="手动操作组件&#xa;• ManualAddDeviceDialog&#xa;• 自定义表单&#xa;• 批量操作" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1ffc7;strokeColor=#67ab36;" vertex="1" parent="1">
+          <mxGeometry x="1400" y="620" width="160" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- 服务层 -->
+        <mxCell id="services-layer" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;opacity=30;" vertex="1" parent="1">
+          <mxGeometry x="80" y="880" width="1500" height="200" as="geometry" />
+        </mxCell>
+
+        <mxCell id="services-title" value="服务层 (API Services)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="740" y="890" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- HTTP Request -->
+        <mxCell id="http-request" value="httpRequest.js&#xa;HTTP请求封装&#xa;• Axios配置&#xa;• 请求拦截&#xa;• 响应处理&#xa;• 错误处理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffd6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="120" y="940" width="150" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- User API -->
+        <mxCell id="user-api" value="user.js&#xa;用户相关API&#xa;• 登录注册&#xa;• 用户信息&#xa;• 密码管理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffd6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="300" y="940" width="120" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Agent API -->
+        <mxCell id="agent-api" value="agent.js&#xa;智能体API&#xa;• 智能体CRUD&#xa;• 聊天记录&#xa;• 配置管理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffd6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="450" y="940" width="120" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Device API -->
+        <mxCell id="device-api" value="device.js&#xa;设备管理API&#xa;• 设备绑定&#xa;• 状态查询&#xa;• 设备配置" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffd6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="600" y="940" width="120" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Model API -->
+        <mxCell id="model-api" value="model.js&#xa;模型配置API&#xa;• 模型管理&#xa;• 参数设置&#xa;• 提供商配置" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffd6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="750" y="940" width="120" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Admin API -->
+        <mxCell id="admin-api" value="admin.js&#xa;管理员API&#xa;• 用户管理&#xa;• 系统配置&#xa;• 权限控制" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffd6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="900" y="940" width="120" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Dict API -->
+        <mxCell id="dict-api" value="dict.js&#xa;字典数据API&#xa;• 字典管理&#xa;• 数据类型&#xa;• 配置项" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffd6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="940" width="120" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- OTA API -->
+        <mxCell id="ota-api" value="ota.js&#xa;固件升级API&#xa;• 版本管理&#xa;• 固件下发&#xa;• 升级状态" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffd6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="940" width="120" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Timbre API -->
+        <mxCell id="timbre-api" value="timbre.js&#xa;音色管理API&#xa;• 声纹识别&#xa;• 音色配置&#xa;• 语音处理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffd6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="1350" y="940" width="120" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- 状态管理层 -->
+        <mxCell id="state-layer" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e6f7ff;strokeColor=#1890ff;opacity=30;" vertex="1" parent="1">
+          <mxGeometry x="80" y="1120" width="1500" height="200" as="geometry" />
+        </mxCell>
+
+        <mxCell id="state-title" value="状态管理和基础设施层" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="740" y="1130" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Vuex Store -->
+        <mxCell id="vuex-store" value="Vuex Store&#xa;• 全局状态管理&#xa;• Token状态&#xa;• 用户信息&#xa;• 公共配置" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d4f1ff;strokeColor=#1f85de;" vertex="1" parent="1">
+          <mxGeometry x="120" y="1180" width="150" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Vue Router -->
+        <mxCell id="vue-router" value="Vue Router&#xa;• 路由管理&#xa;• 路由守卫&#xa;• 权限控制&#xa;• 懒加载" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d4f1ff;strokeColor=#1f85de;" vertex="1" parent="1">
+          <mxGeometry x="300" y="1180" width="150" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Vue i18n -->
+        <mxCell id="vue-i18n" value="Vue i18n&#xa;• 国际化支持&#xa;• 多语言切换&#xa;• 语言包管理&#xa;• 动态翻译" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d4f1ff;strokeColor=#1f85de;" vertex="1" parent="1">
+          <mxGeometry x="480" y="1180" width="150" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Element UI -->
+        <mxCell id="element-ui" value="Element UI&#xa;• UI组件库&#xa;• 表单组件&#xa;• 数据展示&#xa;• 交互组件" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d4f1ff;strokeColor=#1f85de;" vertex="1" parent="1">
+          <mxGeometry x="660" y="1180" width="150" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Utils & Tools -->
+        <mxCell id="utils-tools" value="工具函数&#xa;• format.js 格式化&#xa;• date.js 日期处理&#xa;• constant.js 常量&#xa;• index.js 通用工具" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d4f1ff;strokeColor=#1f85de;" vertex="1" parent="1">
+          <mxGeometry x="840" y="1180" width="150" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Service Worker -->
+        <mxCell id="service-worker" value="Service Worker&#xa;• PWA支持&#xa;• 离线功能&#xa;• 缓存管理&#xa;• 推送通知" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d4f1ff;strokeColor=#1f85de;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="1180" width="150" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Audio Processing -->
+        <mxCell id="audio-processing" value="音频处理&#xa;• opus-decoder&#xa;• opus-recorder&#xa;• 录音功能&#xa;• 播放控制" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d4f1ff;strokeColor=#1f85de;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="1180" width="150" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Build Tools -->
+        <mxCell id="build-tools" value="构建工具&#xa;• Vue CLI 5.0&#xa;• Webpack&#xa;• Babel&#xa;• Sass处理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d4f1ff;strokeColor=#1f85de;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="1180" width="150" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- 业务流程层 -->
+        <mxCell id="business-flows" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2e6;strokeColor=#f57c00;opacity=30;" vertex="1" parent="1">
+          <mxGeometry x="80" y="1360" width="1500" height="300" as="geometry" />
+        </mxCell>
+
+        <mxCell id="business-flows-title" value="核心业务流程" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="740" y="1370" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- 用户认证流程 -->
+        <mxCell id="auth-flow" value="用户认证流程&#xa;1. 登录页面渲染&#xa;2. 表单验证&#xa;3. API请求认证&#xa;4. Token存储&#xa;5. 路由跳转&#xa;6. 权限检查" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7e6;strokeColor=#ff8c00;" vertex="1" parent="1">
+          <mxGeometry x="120" y="1420" width="180" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- 智能体管理流程 -->
+        <mxCell id="agent-management-flow" value="智能体管理流程&#xa;1. 智能体列表加载&#xa;2. 搜索过滤&#xa;3. 添加智能体&#xa;4. 配置参数&#xa;5. 设备绑定&#xa;6. 状态监控" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7e6;strokeColor=#ff8c00;" vertex="1" parent="1">
+          <mxGeometry x="330" y="1420" width="180" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- 设备管理流程 -->
+        <mxCell id="device-management-flow" value="设备管理流程&#xa;1. 设备列表展示&#xa;2. 设备注册&#xa;3. 设备绑定&#xa;4. 状态更新&#xa;5. 配置同步&#xa;6. 故障处理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7e6;strokeColor=#ff8c00;" vertex="1" parent="1">
+          <mxGeometry x="540" y="1420" width="180" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- 模型配置流程 -->
+        <mxCell id="model-config-flow" value="模型配置流程&#xa;1. 模型列表管理&#xa;2. 参数配置&#xa;3. 提供商设置&#xa;4. 测试验证&#xa;5. 配置下发&#xa;6. 性能监控" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7e6;strokeColor=#ff8c00;" vertex="1" parent="1">
+          <mxGeometry x="750" y="1420" width="180" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- 系统配置流程 -->
+        <mxCell id="system-config-flow" value="系统配置流程&#xa;1. 参数管理&#xa;2. 字典数据&#xa;3. OTA升级&#xa;4. 配置验证&#xa;5. 缓存更新&#xa;6. 实时生效" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7e6;strokeColor=#ff8c00;" vertex="1" parent="1">
+          <mxGeometry x="960" y="1420" width="180" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- 用户交互流程 -->
+        <mxCell id="user-interaction-flow" value="用户交互流程&#xa;1. 界面响应&#xa;2. 数据加载&#xa;3. 表单提交&#xa;4. 实时反馈&#xa;5. 错误处理&#xa;6. 状态同步" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7e6;strokeColor=#ff8c00;" vertex="1" parent="1">
+          <mxGeometry x="1170" y="1420" width="180" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- 音频处理流程 -->
+        <mxCell id="audio-flow" value="音频处理流程&#xa;1. 录音控制&#xa;2. 格式转换&#xa;3. 压缩编码&#xa;4. 上传传输&#xa;5. 播放控制&#xa;6. 质量监控" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7e6;strokeColor=#ff8c00;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="1420" width="180" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- 连接线 -->
+        
+        <!-- 主应用到视图层 -->
+        <mxCell id="flow1" style="endArrow=classic;html=1;rounded=0;strokeWidth=3;fillColor=#60a917;strokeColor=#2D7600;" edge="1" parent="1" source="main-app" target="home-view">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="827" y="200" as="sourcePoint" />
+            <mxPoint x="560" y="300" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 视图到组件 -->
+        <mxCell id="flow2" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;fillColor=#1ba1e2;strokeColor=#006EAF;" edge="1" parent="1" source="home-view" target="header-bar">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="560" y="400" as="sourcePoint" />
+            <mxPoint x="190" y="620" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="flow3" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;fillColor=#1ba1e2;strokeColor=#006EAF;" edge="1" parent="1" source="home-view" target="device-item">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="560" y="400" as="sourcePoint" />
+            <mxPoint x="370" y="620" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 组件到服务 -->
+        <mxCell id="flow4" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;fillColor=#6a00ff;strokeColor=#3700CC;" edge="1" parent="1" source="header-bar" target="user-api">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="190" y="740" as="sourcePoint" />
+            <mxPoint x="360" y="940" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="flow5" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;fillColor=#6a00ff;strokeColor=#3700CC;" edge="1" parent="1" source="device-item" target="agent-api">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="370" y="740" as="sourcePoint" />
+            <mxPoint x="510" y="940" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 服务到HTTP请求 -->
+        <mxCell id="flow6" style="endArrow=classic;html=1;rounded=0;strokeWidth=3;fillColor=#e85d75;strokeColor=#B20000;" edge="1" parent="1" source="user-api" target="http-request">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="360" y="940" as="sourcePoint" />
+            <mxPoint x="195" y="940" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 状态管理连接 -->
+        <mxCell id="flow7" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;fillColor=#008a00;strokeColor=#005700;" edge="1" parent="1" source="vuex-store" target="home-view">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="195" y="1180" as="sourcePoint" />
+            <mxPoint x="560" y="400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="flow8" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;fillColor=#008a00;strokeColor=#005700;" edge="1" parent="1" source="vue-router" target="login-view">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="375" y="1180" as="sourcePoint" />
+            <mxPoint x="200" y="400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 业务流程连接 -->
+        <mxCell id="flow9" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;fillColor=#ff8c00;strokeColor=#D79B00;" edge="1" parent="1" source="auth-flow" target="login-view">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="210" y="1420" as="sourcePoint" />
+            <mxPoint x="200" y="400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="flow10" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;fillColor=#ff8c00;strokeColor=#D79B00;" edge="1" parent="1" source="agent-management-flow" target="home-view">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="420" y="1420" as="sourcePoint" />
+            <mxPoint x="560" y="400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 外部接口连接 -->
+        <mxCell id="external-apis" value="外部后端API&#xa;manager-api (Spring Boot)&#xa;端口: 8002" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#cc4125;" vertex="1" parent="1">
+          <mxGeometry x="80" y="1720" width="200" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="flow11" style="endArrow=classic;html=1;rounded=0;strokeWidth=3;fillColor=#cc0000;strokeColor=#990000;" edge="1" parent="1" source="http-request" target="external-apis">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="195" y="1040" as="sourcePoint" />
+            <mxPoint x="180" y="1720" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 图例 -->
+        <mxCell id="legend-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="320" y="1720" width="800" height="200" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend-title" value="图例说明" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="670" y="1730" width="100" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- 图例项目 -->
+        <mxCell id="legend1" value="Vue.js应用" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="340" y="1770" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend2" value="视图页面" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="440" y="1770" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend3" value="Vue组件" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1ffc7;strokeColor=#67ab36;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="540" y="1770" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend4" value="API服务" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffd6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="640" y="1770" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend5" value="基础设施" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d4f1ff;strokeColor=#1f85de;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="740" y="1770" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend6" value="业务流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7e6;strokeColor=#ff8c00;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="840" y="1770" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend7" value="外部服务" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#cc4125;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="940" y="1770" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- 数据流连接线说明 -->
+        <mxCell id="flow-legend1" value="主要调用" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="360" y="1830" width="60" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="flow-line1" style="endArrow=classic;html=1;rounded=0;strokeWidth=3;fillColor=#60a917;strokeColor=#2D7600;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="340" y="1840" as="sourcePoint" />
+            <mxPoint x="360" y="1840" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="flow-legend2" value="组件调用" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="460" y="1830" width="60" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="flow-line2" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;fillColor=#1ba1e2;strokeColor=#006EAF;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="440" y="1840" as="sourcePoint" />
+            <mxPoint x="460" y="1840" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="flow-legend3" value="API调用" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="560" y="1830" width="60" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="flow-line3" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;fillColor=#6a00ff;strokeColor=#3700CC;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="540" y="1840" as="sourcePoint" />
+            <mxPoint x="560" y="1840" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="flow-legend4" value="HTTP请求" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="660" y="1830" width="60" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="flow-line4" style="endArrow=classic;html=1;rounded=0;strokeWidth=3;fillColor=#e85d75;strokeColor=#B20000;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="640" y="1840" as="sourcePoint" />
+            <mxPoint x="660" y="1840" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="flow-legend5" value="状态管理" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="760" y="1830" width="60" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="flow-line5" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;fillColor=#008a00;strokeColor=#005700;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="740" y="1840" as="sourcePoint" />
+            <mxPoint x="760" y="1840" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="flow-legend6" value="业务流程" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="860" y="1830" width="60" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="flow-line6" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;fillColor=#ff8c00;strokeColor=#D79B00;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="840" y="1840" as="sourcePoint" />
+            <mxPoint x="860" y="1840" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 技术栈说明 -->
+        <mxCell id="tech-stack-title" value="核心技术栈" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="1730" width="100" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tech-stack-content" value="• Vue.js 2.6.14 + Element UI 2.15&#xa;• Vue Router 3.6 + Vuex 3.6&#xa;• Vue i18n 8.28 + Vue CLI 5.0&#xa;• Axios HTTP客户端&#xa;• Sass/SCSS样式预处理&#xa;• opus-recorder 音频处理&#xa;• PWA离线支持 + 缓存策略" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="1770" width="240" height="140" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
