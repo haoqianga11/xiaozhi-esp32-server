@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.metadata.OrderItem; 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page; 
 
 import cn.hutool.core.collection.CollectionUtil;
 import lombok.AllArgsConstructor;
@@ -79,11 +81,23 @@ public class ModelConfigServiceImpl extends BaseServiceImpl<ModelConfigDao, Mode
         Map<String, Object> params = new HashMap<String, Object>();
         params.put(Constant.PAGE, page);
         params.put(Constant.LIMIT, limit);
+        
+        // 不再使用默认的getPage方法，而是直接创建Page对象并自定义排序
+        long curPage = Long.parseLong(page);
+        long pageSize = Long.parseLong(limit);
+        Page<ModelConfigEntity> pageInfo = new Page<>(curPage, pageSize);
+        
+        // 添加排序规则：先按is_enabled降序，再按sort升序
+        pageInfo.addOrder(OrderItem.desc("is_enabled"));
+        pageInfo.addOrder(OrderItem.asc("sort"));
+        
+        // 执行分页查询
         IPage<ModelConfigEntity> modelConfigEntityIPage = modelConfigDao.selectPage(
-                getPage(params, "sort", true),
+                pageInfo,
                 new QueryWrapper<ModelConfigEntity>()
                         .eq("model_type", modelType)
                         .like(StringUtils.isNotBlank(modelName), "model_name", "%" + modelName + "%"));
+        
         return getPageData(modelConfigEntityIPage, ModelConfigDTO.class);
     }
 
@@ -91,7 +105,7 @@ public class ModelConfigServiceImpl extends BaseServiceImpl<ModelConfigDao, Mode
     public ModelConfigDTO add(String modelType, String provideCode, ModelConfigBodyDTO modelConfigBodyDTO) {
         // 先验证有没有供应器
         if (StringUtils.isBlank(modelType) || StringUtils.isBlank(provideCode)) {
-            throw new RenException("modelType和provideCode不能为空");
+            throw new RenException(ErrorCode.MODEL_TYPE_PROVIDE_CODE_NOT_NULL);
         }
         List<ModelProviderDTO> providerList = modelProviderService.getList(modelType, provideCode);
         if (CollectionUtil.isEmpty(providerList)) {
@@ -110,7 +124,7 @@ public class ModelConfigServiceImpl extends BaseServiceImpl<ModelConfigDao, Mode
     public ModelConfigDTO edit(String modelType, String provideCode, String id, ModelConfigBodyDTO modelConfigBodyDTO) {
         // 先验证有没有供应器
         if (StringUtils.isBlank(modelType) || StringUtils.isBlank(provideCode)) {
-            throw new RenException("modelType和provideCode不能为空");
+            throw new RenException(ErrorCode.MODEL_TYPE_PROVIDE_CODE_NOT_NULL);
         }
         List<ModelProviderDTO> providerList = modelProviderService.getList(modelType, provideCode);
         if (CollectionUtil.isEmpty(providerList)) {
