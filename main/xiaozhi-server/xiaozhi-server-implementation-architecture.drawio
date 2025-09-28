@@ -1,0 +1,227 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="65bd71144e">
+    <diagram name="xiaozhi-server实现架构" id="xiaozhi-server-implementation">
+        <mxGraphModel dx="1772" dy="907" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="2339" math="0" shadow="0">
+            <root>
+                <mxCell id="0" />
+                <mxCell id="1" parent="0" />
+                <mxCell id="title" value="xiaozhi-server 实现架构总览" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=24;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="577" y="30" width="500" height="50" as="geometry" />
+                </mxCell>
+                <mxCell id="app" value="app.py&#10;- 加载配置并初始化日志&#10;- 校验 FFmpeg 与 stdin 监控&#10;- 并发启动 WebSocket / HTTP 服务" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="700" y="110" width="280" height="90" as="geometry" />
+                </mxCell>
+                <mxCell id="config-group" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;opacity=30;" parent="1" vertex="1">
+                    <mxGeometry x="120" y="190" width="420" height="320" as="geometry" />
+                </mxCell>
+                <mxCell id="config-group-title" value="配置加载与缓存" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="140" y="200" width="200" height="30" as="geometry" />
+                </mxCell>
+                <mxCell id="load-config" value="config.settings.load_config()&#10;- 合并默认与部署配置&#10;- 可选调用 manager-api 拉取&#10;- ensure_directories() 准备目录" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="150" y="240" width="340" height="100" as="geometry" />
+                </mxCell>
+                <mxCell id="default-config" value="config.yaml&#10;默认参数模板" style="shape=document;whiteSpace=wrap;html=1;strokeColor=#6c8ebf;fillColor=#ffffff;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="150" y="360" width="130" height="70" as="geometry" />
+                </mxCell>
+                <mxCell id="custom-config" value="data/.config.yaml&#10;部署实例配置" style="shape=document;whiteSpace=wrap;html=1;strokeColor=#6c8ebf;fillColor=#ffffff;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="300" y="360" width="150" height="70" as="geometry" />
+                </mxCell>
+                <mxCell id="cache-manager" value="core.utils.cache.manager&#10;CacheManager (CONFIG)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="150" y="450" width="180" height="70" as="geometry" />
+                </mxCell>
+                <mxCell id="ws-group" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;opacity=30;" parent="1" vertex="1">
+                    <mxGeometry x="580" y="220" width="460" height="480" as="geometry" />
+                </mxCell>
+                <mxCell id="ws-title" value="WebSocket 实时交互 (端口 8000)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="600" y="230" width="280" height="30" as="geometry" />
+                </mxCell>
+                <mxCell id="ws-server" value="core.websocket_server.WebSocketServer&#10;- websockets.serve 接入&#10;- initialize_modules 首次加载能力&#10;- active_connections + config_lock&#10;- update_config 从 API 热更新" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="620" y="280" width="360" height="110" as="geometry" />
+                </mxCell>
+                <mxCell id="connection-handler-box" value="core.connection.ConnectionHandler&#10;- 单连接独立会话与队列&#10;- Auth + 设备绑定 + 报表&#10;- 音频/文本状态机与定时器" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="620" y="410" width="360" height="120" as="geometry" />
+                </mxCell>
+                <mxCell id="auth-middleware" value="AuthMiddleware&#10;- JWT/签名校验&#10;- 触发设备绑定流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1ffc7;strokeColor=#67ab36;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="640" y="540" width="150" height="70" as="geometry" />
+                </mxCell>
+                <mxCell id="prompt-manager" value="PromptManager&#10;- 组合系统/角色提示词&#10;- 管理 LLM 会话上下文" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1ffc7;strokeColor=#67ab36;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="810" y="540" width="160" height="70" as="geometry" />
+                </mxCell>
+                <mxCell id="voiceprint" value="VoiceprintProvider&#10;- 可选声纹识别&#10;- 按需初始化 ASR/声纹" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1ffc7;strokeColor=#67ab36;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="640" y="620" width="160" height="60" as="geometry" />
+                </mxCell>
+                <mxCell id="tool-handler" value="UnifiedToolHandler + 插件&#10;- plugins_func auto_import&#10;- Action 结果注入至 LLM" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1ffc7;strokeColor=#67ab36;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="820" y="620" width="160" height="60" as="geometry" />
+                </mxCell>
+                <mxCell id="pipeline-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;opacity=40;" parent="1" vertex="1">
+                    <mxGeometry x="620" y="700" width="430" height="150" as="geometry" />
+                </mxCell>
+                <mxCell id="modules-title" value="模块化对话流水线 (initialize_modules 动态选型)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=13;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="640" y="710" width="360" height="30" as="geometry" />
+                </mxCell>
+                <mxCell id="vad" value="VAD" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="650" y="760" width="60" height="60" as="geometry" />
+                </mxCell>
+                <mxCell id="asr" value="ASR" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="720" y="760" width="60" height="60" as="geometry" />
+                </mxCell>
+                <mxCell id="intent" value="Intent" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="790" y="760" width="70" height="60" as="geometry" />
+                </mxCell>
+                <mxCell id="llm" value="LLM" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="870" y="760" width="60" height="60" as="geometry" />
+                </mxCell>
+                <mxCell id="memory" value="Memory" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="940" y="760" width="70" height="60" as="geometry" />
+                </mxCell>
+                <mxCell id="tts" value="TTS" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="1020" y="760" width="60" height="60" as="geometry" />
+                </mxCell>
+                <mxCell id="threadpool" value="ThreadPoolExecutor&#10;- 处理阻塞 I/O&#10;- TTS 合成与上报任务" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="840" width="200" height="70" as="geometry" />
+                </mxCell>
+                <mxCell id="http-group" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;opacity=30;" parent="1" vertex="1">
+                    <mxGeometry x="1080" y="230" width="420" height="380" as="geometry" />
+                </mxCell>
+                <mxCell id="http-title" value="HTTP 服务 (端口 8003)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;fontSize=16;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1100" y="240" width="220" height="30" as="geometry" />
+                </mxCell>
+                <mxCell id="http-server" value="core.http_server.SimpleHttpServer&#10;- aiohttp Web 应用&#10;- 条件开启 /xiaozhi/ota/&#10;- /mcp/vision/explain 推理服务" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0f0f0;strokeColor=#666666;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="1120" y="290" width="340" height="100" as="geometry" />
+                </mxCell>
+                <mxCell id="ota-handler" value="OTAHandler&#10;- 设备固件/资源下发&#10;- MQTT 凭证签发&#10;- 协调 WebSocket 与 MQTT" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0f0f0;strokeColor=#666666;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="1120" y="410" width="170" height="120" as="geometry" />
+                </mxCell>
+                <mxCell id="vision-handler" value="VisionHandler&#10;- Bearer Token 校验&#10;- 图片验签与 Base64 转码&#10;- VLLM 视觉解释调用" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0f0f0;strokeColor=#666666;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="1310" y="410" width="170" height="120" as="geometry" />
+                </mxCell>
+                <mxCell id="vllm" value="core.utils.vllm.create_instance()&#10;- selected_module.VLLM" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1ffc7;strokeColor=#67ab36;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="1310" y="540" width="170" height="70" as="geometry" />
+                </mxCell>
+                <mxCell id="esp32" value="ESP32 设备&#10;- OTA 配置地址&#10;- WebSocket 音频通道" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="170" y="540" width="180" height="90" as="geometry" />
+                </mxCell>
+                <mxCell id="client-app" value="Web / App 客户端&#10;- 直接连接 WebSocket&#10;- 文本与音频混合交互" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="620" y="900" width="220" height="80" as="geometry" />
+                </mxCell>
+                <mxCell id="manager-console" value="Manager API 控台&#10;- 配置与模型管理&#10;- Agent 模板与调试&#10;- 设备状态回溯" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffd966;strokeColor=#d6b656;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="1180" y="660" width="220" height="110" as="geometry" />
+                </mxCell>
+                <mxCell id="manager-api" value="config.manage_api_client.ManageApiClient (httpx)&#10;- /config/server-base&#10;- /config/agent-models&#10;- /agent/chat-history/report" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="940" y="660" width="220" height="110" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-app-config" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#666666;" parent="1" source="app" target="load-config" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-app-ws" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#666666;" parent="1" source="app" target="ws-server" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-app-http" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#666666;" parent="1" source="app" target="http-server" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-load-default" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6c8ebf;" parent="1" source="load-config" target="default-config" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-load-custom" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6c8ebf;" parent="1" source="load-config" target="custom-config" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-load-cache" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6c8ebf;" parent="1" source="load-config" target="cache-manager" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-load-manager" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#666666;" parent="1" source="load-config" target="manager-api" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-ws-conn" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#d6b656;" parent="1" source="ws-server" target="connection-handler-box" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-conn-auth" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#67ab36;" parent="1" source="connection-handler-box" target="auth-middleware" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-conn-prompt" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#67ab36;" parent="1" source="connection-handler-box" target="prompt-manager" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-conn-voice" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#67ab36;" parent="1" source="connection-handler-box" target="voiceprint" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-conn-tool" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#67ab36;" parent="1" source="connection-handler-box" target="tool-handler" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-conn-vad" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#82b366;" parent="1" source="connection-handler-box" target="vad" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-threadpool" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#d6b656;" parent="1" source="connection-handler-box" target="threadpool" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-vad-asr" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#82b366;" parent="1" source="vad" target="asr" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-asr-intent" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#82b366;" parent="1" source="asr" target="intent" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-intent-llm" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#82b366;" parent="1" source="intent" target="llm" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-llm-memory" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#82b366;" parent="1" source="llm" target="memory" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-llm-tts" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#82b366;" parent="1" source="llm" target="tts" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-memory-llm" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#82b366;dashed=1;" parent="1" source="memory" target="llm" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-threadpool-tts" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#d6b656;" parent="1" source="threadpool" target="tts" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-prompt-llm" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#67ab36;dashed=1;" parent="1" source="prompt-manager" target="llm" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-tool-llm" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#67ab36;dashed=1;" parent="1" source="tool-handler" target="llm" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-voice-asr" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#67ab36;dashed=1;" parent="1" source="voiceprint" target="asr" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-tts-conn" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#d6b656;" parent="1" source="tts" target="connection-handler-box" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-http-ota" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#666666;" parent="1" source="http-server" target="ota-handler" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-http-vision" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#666666;" parent="1" source="http-server" target="vision-handler" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-vision-vllm" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#67ab36;" parent="1" source="vision-handler" target="vllm" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-vision-manager" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#d6b656;" parent="1" source="vision-handler" target="manager-api" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-conn-manager" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#d6b656;" parent="1" source="connection-handler-box" target="manager-api" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-manager-console" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#d6b656;" parent="1" source="manager-console" target="manager-api" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-load-cache-return" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;endArrow=block;endFill=1;strokeColor=#6c8ebf;" parent="1" source="cache-manager" target="load-config" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-ota-esp32" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#666666;" parent="1" source="esp32" target="ota-handler" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-ota-response" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;endArrow=block;endFill=1;strokeColor=#666666;" parent="1" source="ota-handler" target="esp32" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-esp32-ws" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#666666;" parent="1" source="esp32" target="ws-server" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-client-ws" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#666666;" parent="1" source="client-app" target="ws-server" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+                <mxCell id="edge-manager-api-connection" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;endArrow=block;endFill=1;strokeColor=#d6b656;" parent="1" source="manager-api" target="connection-handler-box" edge="1">
+                    <mxGeometry relative="1" as="geometry" />
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

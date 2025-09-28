@@ -1,0 +1,162 @@
+<mxfile host="65bd71144e">
+    <diagram id="prtHgNgQTEPvFCAcTncT" name="智控台API配置流程">
+        <mxGraphModel dx="1226" dy="898" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="start" value="启动 xiaozhi-server" style="rounded=1;whiteSpace=wrap;html=1;fontSize=14;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+                    <mxGeometry x="320" y="40" width="160" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="load_config" value="load_config()" style="rounded=1;whiteSpace=wrap;html=1;fontSize=14;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+                    <mxGeometry x="320" y="120" width="160" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_start_load" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=none;endArrow=block;startSize=8;endSize=8;" edge="1" parent="1" source="start" target="load_config">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="check_cache" value="检查配置缓存" style="rhombus;whiteSpace=wrap;html=1;fontSize=14;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+                    <mxGeometry x="340" y="200" width="120" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_load_cache" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=none;endArrow=block;startSize=8;endSize=8;" edge="1" parent="1" source="load_config" target="check_cache">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cache_hit" value="返回缓存的配置" style="rounded=1;whiteSpace=wrap;html=1;fontSize=14;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+                    <mxGeometry x="520" y="220" width="120" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_cache_hit" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=none;endArrow=block;startSize=8;endSize=8;" edge="1" parent="1" source="check_cache" target="cache_hit">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="520" y="240" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="480" y="240"/>
+                            <mxPoint x="520" y="240"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="cache_hit_label" value="缓存命中" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontColor=#0066CC;" vertex="1" parent="1">
+                    <mxGeometry x="500" y="200" width="60" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="read_files" value="读取配置文件" style="rounded=1;whiteSpace=wrap;html=1;fontSize=14;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+                    <mxGeometry x="200" y="320" width="120" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_cache_miss" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=none;endArrow=block;startSize=8;endSize=8;" edge="1" parent="1" source="check_cache" target="read_files">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="260" y="240"/>
+                            <mxPoint x="260" y="320"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="cache_miss_label" value="缓存未命中" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontColor=#0066CC;" vertex="1" parent="1">
+                    <mxGeometry x="140" y="260" width="80" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="file_list" value="• config.yaml (默认配置)&#xa;• data/.config.yaml (用户配置)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="340" y="320" width="200" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="check_manager_api" value="检查 manager-api.url" style="rhombus;whiteSpace=wrap;html=1;fontSize=14;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+                    <mxGeometry x="200" y="400" width="120" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_files_check" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=none;endArrow=block;startSize=8;endSize=8;" edge="1" parent="1" source="read_files" target="check_manager_api">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="merge_config" value="合并配置文件" style="rounded=1;whiteSpace=wrap;html=1;fontSize=14;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="420" width="100" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_no_api" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=none;endArrow=block;startSize=8;endSize=8;" edge="1" parent="1" source="check_manager_api" target="merge_config">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="90" y="440"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="no_api_label" value="未配置API" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontColor:#CC0000;" vertex="1" parent="1">
+                    <mxGeometry x="80" y="400" width="80" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="api_client" value="ManageApiClient" style="rounded=1;whiteSpace=wrap;html=1;fontSize=14;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+                    <mxGeometry x="360" y="420" width="120" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_has_api" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=none;endArrow=block;startSize=8;endSize=8;" edge="1" parent="1" source="check_manager_api" target="api_client">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="340" y="440"/>
+                            <mxPoint x="360" y="440"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="has_api_label" value="已配置API" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontColor=#009900;" vertex="1" parent="1">
+                    <mxGeometry x="340" y="400" width="80" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="manager_api_server" value="智控台 API Server&#xa;(Spring Boot)" style="rounded=1;whiteSpace=wrap;html=1;fontSize=14;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+                    <mxGeometry x="560" y="420" width="140" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_api_call" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=none;endArrow=block;startSize=8;endSize=8;" edge="1" parent="1" source="api_client" target="manager_api_server">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="api_calls" value="1. GET /config/server-base&#xa;2. GET /config/agent-models" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontColor=#0066CC;" vertex="1" parent="1">
+                    <mxGeometry x="560" y="480" width="200" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="api_response" value="API配置数据" style="rounded=1;whiteSpace=wrap;html=1;fontSize=14;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+                    <mxGeometry x="360" y="540" width="120" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_api_response" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=none;endArrow=block;startSize=8;endSize=8;" edge="1" parent="1" source="manager_api_server" target="api_response">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="590" y="500"/>
+                            <mxPoint x="590" y="560"/>
+                            <mxPoint x="480" y="560"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="server_config_merge" value="合并server配置&#xa;(以本地为准)" style="rounded=1;whiteSpace=wrap;html=1;fontSize=14;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+                    <mxGeometry x="200" y="540" width="120" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_merge_server" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=none;endArrow=block;startSize=8;endSize=8;" edge="1" parent="1" source="api_response" target="server_config_merge">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="ensure_dirs" value="ensure_directories()" style="rounded=1;whiteSpace=wrap;html=1;fontSize=14;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+                    <mxGeometry x="200" y="620" width="120" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_dirs_merge" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=none;endArrow=block;startSize=8;endSize=8;" edge="1" parent="1" source="merge_config" target="ensure_dirs">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="90" y="560"/>
+                            <mxPoint x="90" y="640"/>
+                            <mxPoint x="200" y="640"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="edge_dirs_api" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=none;endArrow=block;startSize=8;endSize=8;" edge="1" parent="1" source="server_config_merge" target="ensure_dirs">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="cache_config" value="缓存配置" style="rounded=1;whiteSpace=wrap;html=1;fontSize=14;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+                    <mxGeometry x="200" y="700" width="120" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_cache_config" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=none;endArrow=block;startSize=8;endSize=8;" edge="1" parent="1" source="ensure_dirs" target="cache_config">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="return_config" value="返回配置" style="rounded=1;whiteSpace=wrap;html=1;fontSize=14;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+                    <mxGeometry x="200" y="780" width="120" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_return_config" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=none;endArrow=block;startSize=8;endSize=8;" edge="1" parent="1" source="cache_config" target="return_config">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="modules_init" value="initialize_modules()" style="rounded=1;whiteSpace=wrap;html=1;fontSize=14;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+                    <mxGeometry x="320" y="860" width="160" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_modules_init" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=none;endArrow=block;startSize=8;endSize=8;" edge="1" parent="1" source="return_config" target="modules_init">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="260" y="820"/>
+                            <mxPoint x="260" y="880"/>
+                            <mxPoint x="320" y="880"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="config_notes" value="配置保护机制：&#xa;• server配置以本地为准&#xa;• 防止远程配置错误导致服务无法访问&#xa;• 保证服务器网络配置的本地控制权" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+                    <mxGeometry x="580" y="540" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="flow_title" value="智控台API配置流程图" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontWeight=bold;" vertex="1" parent="1">
+                    <mxGeometry x="320" y="10" width="160" height="20" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

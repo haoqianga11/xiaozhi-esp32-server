@@ -111,7 +111,7 @@ async with websockets.serve(
 
 #### 初始化阶段 (connection.py:164-217)
 
-1. **认证验证**：JWT 认证确保连接安全
+1. **认证验证**：Bearer token 白名单认证确保连接安全
 2. **私有配置获取**：从 API 获取设备专属配置
 3. **异步组件初始化**：在后台线程中初始化 TTS、ASR 等组件
 4. **超时检查任务**：防止连接长时间无响应
@@ -167,10 +167,16 @@ async def _route_message(self, message):
 
 ### 文本交互流程
 
-1. **文本接收** → `handleTextMessage()`
-2. **LLM处理** → 直接生成回复
-3. **TTS合成** → 可选的语音合成
-4. **响应返回** → 文本或音频格式
+*注意：此流程不是指客户直接输入文本，而是系统内部处理ASR转换后的文本或控制消息*
+
+1. **ASR结果接收** → 语音识别转换后的文本进入 `handleTextMessage()`
+2. **LLM处理** → 对文本进行理解和生成回复
+3. **TTS合成** → 将回复文本转换为语音（可选）
+4. **响应返回** → 音频格式返回给ESP32设备
+
+**实际场景**：
+- ESP32设备发送音频数据 → 服务器ASR转换为文本 → LLM处理 → TTS合成 → 返回音频给ESP32
+- 支持中途打断：`client_abort` 标志控制响应生成过程
 
 ## 关键协调机制
 
@@ -197,10 +203,12 @@ self.report_thread = None
 
 ```python
 auto_import_modules("plugins_func.functions")
-self.func_handler = UnifiedToolHandler()
+self.func_handler = None  # 延迟初始化
 ```
 
 - **自动加载**：`plugins_func/functions/` 目录下的功能插件
+- **延迟初始化**：在 `_initialize_intent()` 中创建 `UnifiedToolHandler(self)`
+- **异步初始化**：调用 `func_handler._initialize()` 完成初始化
 - **统一接口**：`UnifiedToolHandler` 统一工具调用
 - **扩展功能**：音乐播放、天气查询、IoT控制等
 
@@ -365,14 +373,19 @@ self.func_handler = UnifiedToolHandler()
 
 ### 1. 认证与授权
 
-#### JWT 认证机制
+#### Bearer Token 白名单认证机制
 ```python
-# JWT token 生成与验证
-auth_key = config["server"]["auth_key"]
-token = jwt.encode({"device_id": device_id, "exp": exp_time}, auth_key)
+# Bearer token 白名单认证
+# AuthMiddleware 类维护 token 白名单
+self.tokens = {
+    item["token"]: item["name"]
+    for item in self.auth_config.get("tokens", [])
+}
 
 # 连接时的认证验证
 await self.auth.authenticate(self.headers)
+# 验证 Authorization: Bearer <token> 格式
+# 同时支持设备白名单验证
 ```
 
 #### 访问控制策略
@@ -395,8 +408,10 @@ if len(device_connections[device_id]) >= MAX_CONNECTIONS_PER_DEVICE:
 - **HTTPS**: HTTP 接口必须启用 SSL/TLS
 - **证书管理**: 自动更新 SSL 证书
 
+> **注意**: 以下为建议的安全实现示例，当前代码库中暂未实现
+
 ```python
-# TLS 配置示例
+# TLS 配置示例（建议实现）
 ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
 ssl_context.load_cert_chain(certfile, keyfile)
 await websockets.serve(handler, host, port, ssl=ssl_context)
@@ -409,7 +424,7 @@ await websockets.serve(handler, host, port, ssl=ssl_context)
 - **API 密钥保护**: 加密存储 AI 服务的 API 密钥
 
 ```python
-# 敏感数据清理
+# 建议的敏感数据清理实现
 async def cleanup_sensitive_data(self):
     self.client_audio_buffer.clear()
     if hasattr(self, 'dialogue'):
@@ -417,7 +432,7 @@ async def cleanup_sensitive_data(self):
     # 清理其他敏感状态
 ```
 
-### 3. IoT 控制安全
+### 3. IoT 控制安全（建议实现）
 
 #### 指令验证与审计
 - **指令白名单**: 只允许执行预定义的安全指令
@@ -426,7 +441,7 @@ async def cleanup_sensitive_data(self):
 - **危险操作拦截**: 识别并阻止潜在的危险指令
 
 ```python
-# IoT 指令安全验证
+# 建议的 IoT 指令安全验证实现
 SAFE_IOT_COMMANDS = {
     "light_control": ["on", "off", "brightness"],
     "temperature": ["set_temperature"],
@@ -454,13 +469,13 @@ async def validate_iot_command(command, device_id):
 - **资源限制**: 限制插件的内存和 CPU 使用
 
 ```python
-# 插件安全执行
+# 建议的插件安全执行实现
 import resource
 
 def execute_plugin_safely(plugin_func, *args, **kwargs):
     # 设置资源限制
     resource.setrlimit(resource.RLIMIT_AS, (100*1024*1024, 100*1024*1024))  # 100MB
-    
+
     try:
         with timeout(5):  # 5秒超时
             return plugin_func(*args, **kwargs)
@@ -469,7 +484,7 @@ def execute_plugin_safely(plugin_func, *args, **kwargs):
         return None
 ```
 
-### 4. 安全监控与响应
+### 4. 安全监控与响应（建议实现）
 
 #### 实时威胁检测
 - **异常连接模式**: 检测高频连接/断开行为
@@ -477,19 +492,19 @@ def execute_plugin_safely(plugin_func, *args, **kwargs):
 - **异常指令检测**: AI 生成内容的安全性检测
 
 ```python
-# 安全监控示例
+# 建议的安全监控实现
 class SecurityMonitor:
     def __init__(self):
         self.connection_attempts = defaultdict(list)
         self.suspicious_devices = set()
-    
+
     def check_connection_rate(self, client_ip):
         now = time.time()
         attempts = self.connection_attempts[client_ip]
         # 清理旧记录
         attempts[:] = [t for t in attempts if now - t < 60]
         attempts.append(now)
-        
+
         if len(attempts) > 10:  # 1分钟内超过10次连接
             logger.warning(f"可疑连接行为: {client_ip}")
             return False
@@ -502,7 +517,7 @@ class SecurityMonitor:
 - **安全通告**: 向管理员发送安全警告
 
 ```python
-# 安全事件响应
+# 建议的安全事件响应实现
 async def handle_security_incident(incident_type, details):
     if incident_type == "suspicious_activity":
         await isolate_device(details["device_id"])
