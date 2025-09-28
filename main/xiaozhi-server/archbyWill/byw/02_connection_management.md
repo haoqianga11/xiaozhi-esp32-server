@@ -193,6 +193,70 @@ graph TB
     class F,G,H monitor
 ```
 
+### 6. Handler/Manager 协作视图
+
+```mermaid
+graph LR
+    subgraph "接入层"
+        WS[WebSocketServer<br/>连接监听]
+        MOD[模块池初始化<br/>VAD/ASR/LLM]
+    end
+
+    subgraph "会话处理层"
+        CH[ConnectionHandler<br/>单连接上下文]
+        TMP[TextMessageProcessor]
+        REG[TextMessageHandlerRegistry]
+        H1[HelloTextMessageHandler]
+        H2[IotTextMessageHandler]
+        H3[ServerTextMessageHandler]
+    end
+
+    subgraph "会话私有资源"
+        QUEUE[音频队列<br/>client_audio_buffer]
+        DIALOGUE[Dialogue<br/>对话历史]
+        VOICE[VoiceprintProvider<br/>声纹实例]
+    end
+
+    subgraph "管理与资源层"
+        UTH[UnifiedToolHandler<br/>LLM函数路由]
+        TM[ToolManager]
+        EXEC[执行器集合<br/>Server/Device/MCP]
+        PROMPT[PromptManager]
+        CACHE[GlobalCacheManager]
+    end
+
+    WS --> CH
+    MOD --> CH
+    CH --> TMP
+    TMP --> REG
+    REG --> H1
+    REG --> H2
+    REG --> H3
+
+    CH --> QUEUE
+    CH --> DIALOGUE
+    CH --> VOICE
+
+    CH --> UTH
+    UTH --> TM
+    TM --> EXEC
+
+    CH --> PROMPT
+    PROMPT --> CACHE
+
+    classDef entry fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef handler fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef manager fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+    classDef resource fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+
+    class WS,MOD entry
+    class CH,TMP,REG,H1,H2,H3 handler
+    class UTH,TM,EXEC,PROMPT,CACHE manager
+    class QUEUE,DIALOGUE,VOICE resource
+```
+
+> **理解要点：** 连接级 Handler 负责调度流程和维持会话状态，Manager 则集中承载共享资源（执行器、缓存、提示词等），两者通过清晰的接口解耦，便于扩展和故障隔离。
+
 ## WebSocket连接层架构（完整概览）
 
 ## 高并发连接架构设计
