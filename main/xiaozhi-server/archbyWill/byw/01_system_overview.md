@@ -8,93 +8,93 @@
 graph TB
     subgraph "外部接入层 (External Interface)"
         A[ESP32设备]
-        B[管理后台API]
-        C[MCP接入点]
-        D[AI服务提供商]
+        B[MQTT网关]
+        C[管理后台API]
+        D[MCP接入点]
+        E[AI服务提供商]
     end
     
     subgraph "服务入口层 (Service Gateway)"
-        E[WebSocketServer]
-        F[SimpleHttpServer]
-        G[主事件循环]
+        F[WebSocketServer]
+        G[SimpleHttpServer]
+        H[主事件循环]
     end
     
     subgraph "连接处理层 (Connection Layer)"
-        H[连接管理器]
-        I[ConnectionHandler Pool]
-        J[消息路由器]
+        I[连接管理器]
+        J[ConnectionHandler Pool]
+        K[消息路由器]
     end
     
     subgraph "任务执行层 (Task Execution)"
-        K[异步任务队列]
-        L[线程池]
-        M[AI服务调度器]
+        L[线程池 ThreadPoolExecutor]
+        M[同步队列 Queue]
+        N[异步任务包装器]
     end
     
     subgraph "核心服务层 (Core Services)"
-        N[VAD语音检测]
-        O[ASR语音识别]
-        P[LLM大语言模型]
-        Q[TTS语音合成]
-        R[Memory记忆系统]
-        S[Intent意图识别]
+        O[VAD语音检测]
+        P[ASR语音识别]
+        Q[LLM大语言模型]
+        R[TTS语音合成]
+        S[Memory记忆系统]
+        T[Intent意图识别]
     end
     
     subgraph "插件扩展层 (Plugin System)"
-        T[插件加载器]
-        U[工具处理器]
-        V[功能插件]
+        U[插件加载器]
+        V[工具处理器]
+        W[功能插件]
     end
-    
+
     subgraph "数据存储层 (Data Layer)"
-        W[音频缓冲队列]
-        X[对话历史]
-        Y[配置管理]
-        Z[日志系统]
+        X[音频缓冲队列]
+        Y[对话历史]
+        Z[配置管理]
+        AA[日志系统]
     end
     
     %% 连接关系
-    A --> E
+    A --> F
     B --> F
-    C --> E
-    
-    E --> H
-    F --> H
-    G --> H
-    
+    C --> G
+    D --> F
+
+    F --> I
+    G --> I
     H --> I
+
     I --> J
-    
     J --> K
-    J --> L
+
+    K --> L
     K --> M
-    L --> M
-    
+    L --> N
     M --> N
-    M --> O
-    M --> P
-    M --> Q
-    M --> R
-    M --> S
-    
-    P --> D
-    O --> D
-    Q --> D
-    
-    %% Intent和Memory的调用关系
-    P --> S
-    S --> R
-    R --> X
-    S --> U
-    
-    T --> U
+
+    N --> O
+    N --> P
+    N --> Q
+    N --> R
+    N --> S
+    N --> T
+
+    Q --> E
+    P --> E
+    R --> E
+
+    %% Memory的调用关系（由ConnectionHandler管理）
+    J --> S
+    S --> Y
+
     U --> V
-    
-    I --> W
-    I --> X
-    H --> Y
-    G --> Z
-    
+    V --> W
+
+    J --> X
+    J --> Y
+    I --> Z
+    H --> AA
+
     %% 样式定义
     classDef external fill:#ffebee,stroke:#c62828,stroke-width:2px
     classDef gateway fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
@@ -103,20 +103,21 @@ graph TB
     classDef services fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
     classDef plugin fill:#e0f2f1,stroke:#00695c,stroke-width:2px
     classDef data fill:#fce4ec,stroke:#ad1457,stroke-width:2px
-    
-    class A,B,C,D external
-    class E,F,G gateway
-    class H,I,J connection
-    class K,L,M execution
-    class N,O,P,Q,R,S services
-    class T,U,V plugin
-    class W,X,Y,Z data
+
+    class A,B,C,D,E external
+    class F,G,H gateway
+    class I,J,K connection
+    class L,M,N execution
+    class O,P,Q,R,S,T services
+    class U,V,W plugin
+    class X,Y,Z,AA data
 ```
 
 ## 架构层次说明
 
 ### 1. 外部接入层 (External Interface)
-- **ESP32设备**：硬件客户端，通过WebSocket连接
+- **ESP32设备**：硬件客户端，通过WebSocket直接连接
+- **MQTT网关**：支持MQTT协议设备接入，通过特殊标识`?from=mqtt_gateway`识别，支持16字节头部的音频包解析
 - **管理后台API**：系统管理和监控接口
 - **MCP接入点**：Model Context Protocol 集成点
 - **AI服务提供商**：OpenAI、阿里云、豆包等第三方AI服务
@@ -132,9 +133,9 @@ graph TB
 - **消息路由器**：负责消息的分发和路由
 
 ### 4. 任务执行层 (Task Execution)
-- **异步任务队列**：I/O密集型任务的异步处理
-- **线程池**：CPU密集型任务的并行处理
-- **AI服务调度器**：协调各AI服务的调用
+- **线程池 ThreadPoolExecutor**：管理并发任务执行，每个连接分配独立线程池
+- **同步队列 Queue**：处理ASR上报和TTS合成等任务队列
+- **异步任务包装器**：将同步任务包装为异步执行，适配事件循环
 
 ### 5. 核心服务层 (Core Services)
 - **VAD语音检测**：语音活动检测
@@ -145,10 +146,23 @@ graph TB
 - **Intent意图识别**：用户意图理解
 
 #### 核心服务调用关系
-- **LLM → Intent**：LLM处理用户输入后调用Intent进行意图识别
-- **Intent → Memory**：Intent根据识别结果更新或查询Memory中的对话历史
-- **Intent → 工具处理器**：Intent识别到需要工具调用时触发插件系统
-- **Memory → 对话历史**：Memory系统将对话数据持久化到数据存储层
+
+系统支持两种不同的调用模式：
+
+**模式1：function_call 模式（直连式）**
+- **LLM → 工具处理器**：LLM直接识别并调用工具函数，跳过Intent分析
+- **ConnectionHandler → Memory → LLM**：连接处理器在调用LLM前读取Memory并注入上下文
+- **ConnectionHandler → Memory**：连接处理器直接管理Memory的读写操作
+
+**模式2：intent_llm 模式（分析式）**
+- **LLM → Intent**：专用Intent LLM分析用户意图
+- **Intent → 工具处理器**：Intent根据分析结果调用相应工具
+- **ConnectionHandler → Memory → LLM**：连接处理器在调用LLM前读取Memory并注入上下文（与模式1相同）
+
+**Memory管理机制**
+- Memory的读取和保存由ConnectionHandler直接处理
+- 在对话开始时查询历史记忆，在连接关闭时保存当前对话
+- 两种模式下共享相同的Memory管理机制
 
 ### 6. 插件扩展层 (Plugin System)
 - **插件加载器**：动态加载功能插件
