@@ -259,6 +259,113 @@ graph LR
 
 ## WebSocket连接层架构（完整概览）
 
+```mermaid
+graph TB
+    subgraph "WebSocket连接层完整架构"
+        subgraph "接入层"
+            WS[WebSocketServer<br/>连接监听与分发]
+            AUTH[连接认证器<br/>ConnectionAuthenticator]
+        end
+
+        subgraph "连接管理层"
+            REG[ConnectionRegistry<br/>连接注册管理]
+            CH1[ConnectionHandler 1<br/>session_id: abc123]
+            CH2[ConnectionHandler 2<br/>session_id: def456]
+            CHN[ConnectionHandler N<br/>session_id: xyz789]
+        end
+
+        subgraph "消息路由层"
+            ROUTER[MessageRouter<br/>消息路由中心]
+            TEXT[TextMessageHandler<br/>文本消息处理]
+            AUDIO[AudioMessageHandler<br/>音频消息处理]
+            CTRL[ControlMessageHandler<br/>控制消息处理]
+        end
+
+        subgraph "资源管理层"
+            UTH[UnifiedToolHandler<br/>统一工具处理器]
+            TM[ToolManager<br/>工具管理器]
+            PROMPT[PromptManager<br/>提示词管理]
+            CACHE[GlobalCacheManager<br/>全局缓存]
+        end
+
+        subgraph "连接私有资源"
+            Q1[asyncio.Queue 1<br/>音频队列]
+            BUF1[bytearray 1<br/>音频缓冲区]
+            DIALOGUE1[Dialogue 1<br/>对话历史]
+
+            Q2[asyncio.Queue 2<br/>音频队列]
+            BUF2[bytearray 2<br/>音频缓冲区]
+            DIALOGUE2[Dialogue 2<br/>对话历史]
+
+            QN[asyncio.Queue N<br/>音频队列]
+            BUFN[bytearray N<br/>音频缓冲区]
+            DIALOGUEN[Dialogue N<br/>对话历史]
+        end
+
+        subgraph "AI服务层"
+            ASR[ASR Provider<br/>语音识别]
+            LLM[LLM Provider<br/>大语言模型]
+            TTS[TTS Provider<br/>语音合成]
+            VAD[VAD Provider<br/>语音活动检测]
+        end
+    end
+
+    WS --> AUTH
+    AUTH --> REG
+    REG --> CH1
+    REG --> CH2
+    REG --> CHN
+
+    CH1 --> ROUTER
+    CH2 --> ROUTER
+    CHN --> ROUTER
+
+    ROUTER --> TEXT
+    ROUTER --> AUDIO
+    ROUTER --> CTRL
+
+    CH1 --> Q1
+    CH1 --> BUF1
+    CH1 --> DIALOGUE1
+
+    CH2 --> Q2
+    CH2 --> BUF2
+    CH2 --> DIALOGUE2
+
+    CHN --> QN
+    CHN --> BUFN
+    CHN --> DIALOGUEN
+
+    TEXT --> UTH
+    AUDIO --> UTH
+    CTRL --> UTH
+
+    UTH --> TM
+    UTH --> PROMPT
+    PROMPT --> CACHE
+
+    TM --> ASR
+    TM --> LLM
+    TM --> TTS
+    TM --> VAD
+
+    classDef entry fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef connection fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    classDef router fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+    classDef manager fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef resource fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    classDef service fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+
+    class WS,AUTH entry
+    class REG,ROUTER router
+    class CH1,CH2,CHN connection
+    class UTH,TM,PROMPT,CACHE manager
+    class Q1,BUF1,DIALOGUE1,Q2,BUF2,DIALOGUE2,QN,BUFN,DIALOGUEN resource
+    class TEXT,AUDIO,CTRL,ASR,LLM,TTS,VAD service
+```
+
+> **完整架构说明：** 该架构图展示了WebSocket连接层的完整体系结构，从连接接入、消息路由到资源管理和AI服务集成的全流程。每个ConnectionHandler维护独立的异步资源队列，确保高并发场景下的性能和稳定性。
+
 ## 高并发连接架构设计
 
 ### 1. 连接状态隔离机制
@@ -270,14 +377,14 @@ class ConnectionHandler:
     def __init__(self):
         # 连接唯一标识
         self.session_id = str(uuid.uuid4())  # 唯一会话ID
-        self.device_id = None               # 设备ID  
+        self.device_id = None               # 设备ID
         self.client_ip = None               # 客户端IP
-        
+
         # 连接级别的队列和缓冲区
-        self.asr_audio_queue = queue.Queue()      # 每个连接独立的音频队列
+        self.asr_audio_queue = asyncio.Queue()    # 每个连接独立的异步音频队列
         self.client_audio_buffer = bytearray()    # 每个连接独立的音频缓冲区
         self.dialogue = Dialogue()               # 每个连接独立的对话历史
-        
+
         # 连接状态管理
         self.websocket = None               # WebSocket连接实例
         self.stop_event = asyncio.Event()   # 停止信号
@@ -425,12 +532,12 @@ async def handleTextMessage(conn, message):
 
 async def handleAudioMessage(conn, audio_data):
     """音频消息处理 - 连接隔离"""
-    # 存入连接专属的音频队列
-    conn.asr_audio_queue.put(audio_data)
-    
+    # 存入连接专属的音频队列（异步操作）
+    await conn.asr_audio_queue.put(audio_data)
+
     # 基于连接状态进行VAD检测
     have_voice = conn.vad.is_vad(conn, audio_data)
-    
+
     if have_voice:
         # 添加到连接专属的音频缓冲区
         conn.client_audio_buffer.extend(audio_data)
@@ -494,17 +601,16 @@ class MemoryOptimizedHandler:
         if len(self.client_audio_buffer) > self.max_buffer_size:
             self.client_audio_buffer = self.client_audio_buffer[-self.max_buffer_size:]
             
-        # 清理队列积压
-        if self.asr_audio_queue.qsize() > self.max_queue_size:
-            # 清空队列，保留最新的消息
-            new_queue = queue.Queue()
-            messages = []
-            while not self.asr_audio_queue.empty():
-                messages.append(self.asr_audio_queue.get_nowait())
-            
-            for msg in messages[-100:]:  # 保留最新100条
-                new_queue.put(msg)
-            self.asr_audio_queue = new_queue
+        # 清理队列积压 - 丢弃最旧消息，避免替换队列实例
+        while self.asr_audio_queue.qsize() > self.max_queue_size:
+            try:
+                dropped_msg = self.asr_audio_queue.get_nowait()
+            except asyncio.QueueEmpty:
+                break
+            else:
+                # 标记被丢弃的任务完成，防止 queue.join() 失真
+                self.asr_audio_queue.task_done()
+                # 也可以在此处记录 dropped_msg 方便排查
             
         # 清理对话历史
         if len(self.dialogue.dialogue) > self.max_dialogue_length:
