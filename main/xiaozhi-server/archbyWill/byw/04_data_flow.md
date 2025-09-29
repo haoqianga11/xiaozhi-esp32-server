@@ -273,26 +273,30 @@ class AudioDataQueue:
     
     async def put_audio_data(self, audio_data: bytes):
         """添加音频数据到队列"""
+        # 检查缓冲区大小，必要时截断保留最新内容
+        if len(self.buffer) + len(audio_data) > self.max_buffer_size:
+            keep_size = self.max_buffer_size // 2
+            self.buffer = self.buffer[-keep_size:]
+        
+        self.buffer.extend(audio_data)
+        enqueued = False
         try:
-            # 检查缓冲区大小
-            if len(self.buffer) + len(audio_data) > self.max_buffer_size:
-                # 清理旧数据，保留最新的50%
-                keep_size = self.max_buffer_size // 2
-                self.buffer = self.buffer[-keep_size:]
-            
-            self.buffer.extend(audio_data)
-            await self.queue.put(audio_data)
-            self.stats['total_received'] += len(audio_data)
-            
+            self.queue.put_nowait(audio_data)
+            enqueued = True
         except asyncio.QueueFull:
-            # 队列满时的处理策略
+            # 队列满时记录并丢弃最旧的数据后再尝试一次
             self.stats['queue_overflows'] += 1
-            # 丢弃最旧的数据
             try:
                 self.queue.get_nowait()
-                await self.queue.put(audio_data)
+                self.queue.put_nowait(audio_data)
+                enqueued = True
             except asyncio.QueueEmpty:
                 pass
+            except asyncio.QueueFull:
+                pass
+        
+        if enqueued:
+            self.stats['total_received'] += len(audio_data)
     
     async def get_audio_batch(self, batch_size: int = 10) -> List[bytes]:
         """批量获取音频数据"""
@@ -346,17 +350,24 @@ class ResponseStream:
         self.stream_buffer.clear()
         
         # 然后发送流式数据
-        while self.is_streaming:
+        while True:
+            if not self.is_streaming and self.response_queue.empty():
+                break
+            
             try:
                 chunk = await asyncio.wait_for(
                     self.response_queue.get(), 
                     timeout=0.1
                 )
-                yield chunk
             except asyncio.TimeoutError:
                 continue
             except asyncio.CancelledError:
                 break
+            
+            if chunk is None:
+                break
+            
+            yield chunk
     
     async def end_streaming(self):
         """结束流式响应"""
@@ -404,6 +415,7 @@ graph TB
     D --> G
     
     E --> I
+    E --> K
     F --> H
     G --> J
     H --> L

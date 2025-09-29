@@ -244,7 +244,7 @@ class HeartbeatManager:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                print(f"Heart监控异常: {e}")
+                print(f"心跳监控异常: {e}")
                 
     async def _check_connection_health(self, session_id: str, conn_info: dict, current_time: float):
         """检查连接健康状态"""
@@ -444,10 +444,19 @@ class ResourceMonitor:
         
         if self.connection_manager:
             active_connections = len(self.connection_manager.connections)
-            queue_depth = sum(
-                conn.get('asr_audio_queue', {}).get('qsize', 0)
-                for conn in self.connection_manager.connections.values()
-            )
+            queue_depth = 0
+
+            for conn in self.connection_manager.connections.values():
+                queue_obj = getattr(conn, 'asr_audio_queue', None)
+                if queue_obj is None:
+                    continue
+
+                qsize = getattr(queue_obj, 'qsize', None)
+                if callable(qsize):
+                    try:
+                        queue_depth += qsize()
+                    except NotImplementedError:
+                        continue
         
         # 网络I/O
         network_io = psutil.net_io_counters()
@@ -605,8 +614,25 @@ class ResourceMonitor:
 ### 1. 异常处理机制
 
 ```python
+import asyncio
+import inspect
+import logging
+from typing import Awaitable, Callable, List, Optional
+
+import websockets
+
+
 class ConnectionExceptionHandler:
-    def __init__(self):
+    def __init__(
+        self,
+        *,
+        connection_manager=None,
+        audit_logger: Optional[logging.Logger] = None,
+    ):
+        self.connection_manager = connection_manager
+        self.audit_logger = audit_logger or logging.getLogger(__name__)
+        self.cleanup_callbacks: List[Callable[[str], Awaitable[None]]] = []
+
         self.exception_stats = {
             'connection_errors': 0,
             'timeout_errors': 0,
@@ -614,31 +640,34 @@ class ConnectionExceptionHandler:
             'resource_errors': 0,
             'unknown_errors': 0
         }
-        
+
         self.recovery_strategies = {
-            'ConnectionResetError': self._handle_connection_reset,
-            'asyncio.TimeoutError': self._handle_timeout,
-            'websockets.exceptions.ConnectionClosed': self._handle_connection_closed,
-            'MemoryError': self._handle_memory_error,
-            'OSError': self._handle_os_error
+            ConnectionResetError: self._handle_connection_reset,
+            asyncio.TimeoutError: self._handle_timeout,
+            websockets.exceptions.ConnectionClosed: self._handle_connection_closed,
+            MemoryError: self._handle_memory_error,
+            OSError: self._handle_os_error
         }
-        
-    async def handle_exception(self, session_id: str, exception: Exception, context: dict):
-        """处理连接异常"""
-        exception_type = type(exception).__name__
-        
-        # 更新统计
-        self._update_exception_stats(exception_type)
-        
-        # 记录异常
+
+    def register_cleanup_callback(self, callback: Callable[[str], Awaitable[None]]) -> None:
+        self.cleanup_callbacks.append(callback)
+
+    async def handle_exception(self, session_id: str, exception: Exception, context: dict) -> None:
+        """处理连接异常并执行对应的恢复策略"""
+        handler = self._resolve_handler(exception)
+        self._update_exception_stats(exception)
         await self._log_exception(session_id, exception, context)
-        
-        # 执行恢复策略
-        recovery_func = self.recovery_strategies.get(exception_type, self._handle_unknown_error)
-        await recovery_func(session_id, exception, context)
-        
-    def _update_exception_stats(self, exception_type: str):
+        await handler(session_id, exception, context)
+
+    def _resolve_handler(self, exception: Exception):
+        for exc_type, handler in self.recovery_strategies.items():
+            if isinstance(exception, exc_type):
+                return handler
+        return self._handle_unknown_error
+
+    def _update_exception_stats(self, exception: Exception) -> None:
         """更新异常统计"""
+        exception_type = type(exception).__name__
         if 'Connection' in exception_type or 'connection' in exception_type.lower():
             self.exception_stats['connection_errors'] += 1
         elif 'Timeout' in exception_type or 'timeout' in exception_type.lower():
@@ -649,33 +678,104 @@ class ConnectionExceptionHandler:
             self.exception_stats['resource_errors'] += 1
         else:
             self.exception_stats['unknown_errors'] += 1
-            
-    async def _handle_connection_reset(self, session_id: str, exception: Exception, context: dict):
-        """处理连接重置"""
-        print(f"连接重置 {session_id}: {exception}")
+
+    async def _handle_connection_reset(self, session_id: str, exception: Exception, context: dict) -> None:
+        self.audit_logger.warning("连接重置 %s: %s", session_id, exception)
         await self._force_close_connection(session_id, "connection_reset")
-        
-    async def _handle_timeout(self, session_id: str, exception: Exception, context: dict):
-        """处理超时异常"""
-        print(f"连接超时 {session_id}: {exception}")
+
+    async def _handle_timeout(self, session_id: str, exception: Exception, context: dict) -> None:
+        self.audit_logger.warning("连接超时 %s: %s", session_id, exception)
         await self._force_close_connection(session_id, "timeout")
-        
-    async def _handle_connection_closed(self, session_id: str, exception: Exception, context: dict):
-        """处理连接关闭"""
-        print(f"连接已关闭 {session_id}: {exception}")
+
+    async def _handle_connection_closed(self, session_id: str, exception: Exception, context: dict) -> None:
+        self.audit_logger.info("连接已关闭 %s: %s", session_id, exception)
         await self._cleanup_connection(session_id)
-        
-    async def _handle_memory_error(self, session_id: str, exception: Exception, context: dict):
-        """处理内存错误"""
-        print(f"内存错误 {session_id}: {exception}")
-        # 立即清理该连接的资源
+
+    async def _handle_memory_error(self, session_id: str, exception: Exception, context: dict) -> None:
+        self.audit_logger.error("内存错误 %s: %s", session_id, exception)
         await self._emergency_resource_cleanup(session_id)
         await self._force_close_connection(session_id, "memory_error")
-        
-    async def _handle_os_error(self, session_id: str, exception: Exception, context: dict):
-        """处理操作系统错误"""
-        print(f"系统错误 {session_id}: {exception}")
+
+    async def _handle_os_error(self, session_id: str, exception: Exception, context: dict) -> None:
+        self.audit_logger.error("系统错误 %s: %s", session_id, exception)
         await self._force_close_connection(session_id, "os_error")
+
+    async def _handle_unknown_error(self, session_id: str, exception: Exception, context: dict) -> None:
+        self.audit_logger.error("未知异常 %s: %s", session_id, exception)
+        await self._force_close_connection(session_id, "unknown_error")
+
+    async def _log_exception(self, session_id: str, exception: Exception, context: dict) -> None:
+        log_context = {'session_id': session_id, **context}
+        self.audit_logger.exception("连接异常 %s", session_id, extra={'context': log_context})
+
+    async def _force_close_connection(self, session_id: str, reason: str) -> None:
+        if not self.connection_manager:
+            return
+
+        handler = None
+        if hasattr(self.connection_manager, 'connections'):
+            handler = self.connection_manager.connections.get(session_id)
+        if handler is None and hasattr(self.connection_manager, 'get_connection'):
+            handler = self.connection_manager.get_connection(session_id)
+
+        if handler is None:
+            return
+
+        close_callable = getattr(handler, 'force_close', None)
+        if callable(close_callable):
+            result = close_callable(reason)
+            if inspect.isawaitable(result):
+                await result
+        else:
+            websocket = getattr(handler, 'websocket', None)
+            if websocket is not None:
+                close_result = websocket.close(code=1011, reason=reason)
+                if inspect.isawaitable(close_result):
+                    await close_result
+
+        await self._cleanup_connection(session_id, handler)
+
+    async def _cleanup_connection(self, session_id: str, handler=None) -> None:
+        managed_handler = None
+        if self.connection_manager and hasattr(self.connection_manager, 'connections'):
+            managed_handler = self.connection_manager.connections.pop(session_id, None)
+        handler = handler or managed_handler
+
+        unregister = getattr(self.connection_manager, 'unregister_connection', None)
+        if callable(unregister):
+            result = unregister(session_id)
+            if inspect.isawaitable(result):
+                await result
+
+        if handler and hasattr(handler, 'release_resources'):
+            cleanup_result = handler.release_resources()
+            if inspect.isawaitable(cleanup_result):
+                await cleanup_result
+
+        for callback in self.cleanup_callbacks:
+            result = callback(session_id)
+            if inspect.isawaitable(result):
+                await result
+
+    async def _emergency_resource_cleanup(self, session_id: str) -> None:
+        if not self.connection_manager or not hasattr(self.connection_manager, 'connections'):
+            return
+
+        handler = self.connection_manager.connections.get(session_id)
+        if handler is None:
+            return
+
+        audio_queue = getattr(handler, 'asr_audio_queue', None)
+        if audio_queue is not None and hasattr(audio_queue, 'empty'):
+            while not audio_queue.empty():
+                try:
+                    audio_queue.get_nowait()
+                except Exception:
+                    break
+
+        audio_buffer = getattr(handler, 'client_audio_buffer', None)
+        if isinstance(audio_buffer, (bytearray, list)):
+            audio_buffer.clear()
 ```
 
 ## 优雅关闭机制
