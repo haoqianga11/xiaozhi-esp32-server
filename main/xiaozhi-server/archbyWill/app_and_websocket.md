@@ -1,5 +1,5 @@
 # App.py 主要脉络与 WebSocket 功能分析
-# 图
+## 时序图
 ```mermaid
 sequenceDiagram
     participant App as app.py: main()
@@ -46,6 +46,34 @@ async def main():
     ws_task = asyncio.create_task(ws_server.start())
     ota_server = SimpleHttpServer(config)
     ota_task = asyncio.create_task(ota_server.start())
+
+    # MCP接入点校验与配置 (app.py:80-91)
+    mcp_endpoint = config.get("mcp_endpoint", None)
+    if mcp_endpoint is not None and "你" not in mcp_endpoint:
+        # 校验MCP接入点格式
+        if validate_mcp_endpoint(mcp_endpoint):
+            logger.bind(tag=TAG).info("mcp接入点是\t{}", mcp_endpoint)
+            # 将MCP接入点地址转成调用点 (URL重写)
+            mcp_endpoint = mcp_endpoint.replace("/mcp/", "/call/")
+            config["mcp_endpoint"] = mcp_endpoint
+        else:
+            logger.bind(tag=TAG).error("mcp接入点不符合规范")
+            config["mcp_endpoint"] = "你的接入点 websocket地址"
+
+    # 输出服务地址信息 (app.py:92-112)
+    websocket_port = int(config.get("server", {}).get("port", 8000))
+    http_port = int(config.get("server", {}).get("http_port", 8003))
+
+    logger.bind(tag=TAG).info(
+        "Websocket地址是\tws://{}:{}/xiaozhi/v1/",
+        get_local_ip(), websocket_port,
+    )
+    logger.bind(tag=TAG).info(
+        "=======上面的地址是websocket协议地址，请勿用浏览器访问======="
+    )
+    logger.bind(tag=TAG).info(
+        "如想测试websocket请用谷歌浏览器打开test目录下的test_page.html"
+    )
 ```
 
 **核心组件**：
@@ -64,8 +92,11 @@ async def main():
 
 **关键接口地址**：
 - WebSocket: `ws://IP:8000/xiaozhi/v1/`
-- OTA接口: `http://IP:8003/xiaozhi/ota/`
+- HTTP服务端口: `8003` (包含OTA接口、视觉分析接口等)
 - 视觉分析: `http://IP:8003/mcp/vision/explain`
+- MCP接入点: `config["mcp_endpoint"]` (经过校验和重写后)
+
+> **注意**: OTA接口的日志输出取决于 `read_config_from_api` 配置项。当该配置为 `False` 时，系统会在启动日志中显示OTA接口地址。
 
 ## WebSocketServer.start() 启动的功能
 
@@ -105,16 +136,89 @@ async with websockets.serve(
 - 为每个连接创建独立的 ConnectionHandler
 - 提供配置热更新功能 `update_config()`
 
+#### 配置热更新机制
+
+WebSocketServer 支持运行时配置热更新，通过无参的 `update_config()` 方法实现：
+
+```python
+async def update_config(self) -> bool:
+    """更新服务器配置并重新初始化组件"""
+    try:
+        async with self.config_lock:
+            # 重新获取配置（内部自取，非外部传入）
+            new_config = get_config_from_api(self.config)
+            if new_config is None:
+                self.logger.bind(tag=TAG).error("获取新配置失败")
+                return False
+
+            # 检查 VAD 和 ASR 类型是否需要更新
+            update_vad = check_vad_update(self.config, new_config)
+            update_asr = check_asr_update(self.config, new_config)
+
+            # 重新初始化组件
+            modules = initialize_modules(
+                self.logger, new_config, update_vad, update_asr,
+                "LLM" in new_config["selected_module"], False,
+                "Memory" in new_config["selected_module"],
+                "Intent" in new_config["selected_module"],
+            )
+
+            # 更新组件实例
+            if "vad" in modules: self._vad = modules["vad"]
+            if "asr" in modules: self._asr = modules["asr"]
+            if "llm" in modules: self._llm = modules["llm"]
+            if "intent" in modules: self._intent = modules["intent"]
+            if "memory" in modules: self._memory = modules["memory"]
+
+            self.config = new_config
+            return True
+    except Exception as e:
+        self.logger.bind(tag=TAG).error(f"更新服务器配置失败: {str(e)}")
+        return False
+```
+
+**更新触发条件**：
+- 外部调用 `update_config()` 方法
+- 内部通过 `get_config_from_api()` 获取最新配置
+- VAD/ASR 模块类型变化时精确更新
+- LLM/Memory/Intent 模块启用状态变化时重新初始化
+
+**更新保护机制**：
+- 使用 `asyncio.Lock` 确保配置更新的原子性
+- 返回布尔值表示更新成功/失败状态
+- 异常捕获确保服务稳定性
+- 保持现有连接的稳定运行
+
 ## 功能模块协调执行机制
 
 ### ConnectionHandler 核心架构
 
 #### 初始化阶段 (connection.py:164-217)
 
-1. **认证验证**：Bearer token 白名单认证确保连接安全
-2. **私有配置获取**：从 API 获取设备专属配置
-3. **异步组件初始化**：在后台线程中初始化 TTS、ASR 等组件
-4. **超时检查任务**：防止连接长时间无响应
+1. **设备标识获取**：支持多种方式获取设备ID
+   - 优先从 HTTP Header 中的 `device-id` 获取
+   - 备选方案：从 WebSocket URL 查询参数 `?device-id=xxx&client-id=yyy` 获取
+   - 测试连接：返回"端口正常"提示信息
+
+2. **客户端IP识别**：考虑代理环境的真实IP获取
+   - 优先从 `x-real-ip` Header 获取
+   - 备选从 `x-forwarded-for` Header 获取（取第一个IP）
+   - 最后使用 `websocket.remote_address[0]` 作为直连IP
+
+3. **认证验证**：Bearer token 白名单认证确保连接安全
+4. **连接来源识别**：检测是否来自MQTT网关
+   ```python
+   self.conn_from_mqtt_gateway = request_path.endswith("?from=mqtt_gateway")
+   ```
+5. **私有配置获取**：条件性从 API 获取设备专属配置
+   ```python
+   # 只有当 read_config_from_api 为 True 时才调用API
+   if not self.read_config_from_api:
+       return
+   private_config = get_private_config_from_api(...)
+   ```
+6. **异步组件初始化**：在后台线程中初始化 TTS、ASR 等组件
+7. **超时检查任务**：防止连接长时间无响应
 
 #### 关键组件状态管理
 
@@ -132,6 +236,9 @@ self.client_abort = False
 self.client_is_speaking = False
 self.client_listen_mode = "auto"
 
+# 连接来源标识
+self.conn_from_mqtt_gateway = False  # 是否来自MQTT网关
+
 # 音频处理队列
 self.asr_audio_queue = queue.Queue()
 self.client_audio_buffer = bytearray()
@@ -145,13 +252,26 @@ self.llm_finish_task = True
 
 ```python
 async def _route_message(self, message):
+    """消息路由"""
     if isinstance(message, str):
         await handleTextMessage(self, message)  # 文本消息处理
     elif isinstance(message, bytes):
         if self.vad is None or self.asr is None:
             return
-        self.asr_audio_queue.put(message)  # 音频数据入队
+
+        # 处理来自MQTT网关的音频包（特殊格式处理）
+        if self.conn_from_mqtt_gateway and len(message) >= 16:
+            handled = await self._process_mqtt_audio_message(message)
+            if handled:
+                return
+
+        self.asr_audio_queue.put(message)  # 音频数据同步入队
 ```
+
+**MQTT网关音频处理**：
+- **特殊格式**：MQTT网关发送的音频包包含额外的头部信息（前16字节）
+- **处理逻辑**：`_process_mqtt_audio_message()` 方法解析头部并提取纯音频数据
+- **兼容性**：非MQTT连接直接使用原始音频数据处理流程
 
 ## 核心工作流程
 
