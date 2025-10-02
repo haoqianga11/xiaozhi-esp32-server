@@ -6,19 +6,19 @@
 
 ```mermaid
 graph TD
-    cfg[配置文件\nconfig.yaml & data/.config.yaml] --> init[模块初始化\ncore/utils/modules_initialize.py]
-    init --> ws[WebSocketServer\ncore/websocket_server.py]
-    ws -->|新连接| conn[ConnectionHandler\ncore/connection.py]
-    conn --> vad[VAD 提供者]
-    conn --> asr[ASR 提供者]
-    conn --> llm[LLM 提供者]
-    conn --> tts[TTS 提供者]
-    conn --> mem[Memory 提供者]
-    conn --> intent[Intent 引擎]
-    conn --> tools[UnifiedToolHandler\n工具/插件/MCP]
-    asr --> voiceprint[VoiceprintProvider\n(可选)]
-    tools --> mcp[MCP 客户端]
-    tools --> iot[IoT / 插件工具]
+    cfg["配置文件<br/>config.yaml & data/.config.yaml"] --> init["模块初始化<br/>core/utils/modules_initialize.py"]
+    init --> ws["WebSocketServer<br/>core/websocket_server.py"]
+    ws -->|新连接| conn["ConnectionHandler<br/>core/connection.py"]
+    conn --> vad["VAD 提供者"]
+    conn --> asr["ASR 提供者"]
+    conn --> llm["LLM 提供者"]
+    conn --> tts["TTS 提供者"]
+    conn --> mem["Memory 提供者"]
+    conn --> intent["Intent 引擎"]
+    conn --> tools["UnifiedToolHandler<br/>工具/插件/MCP"]
+    asr --> voiceprint["VoiceprintProvider<br/>(可选)"]
+    tools --> mcp["MCP 客户端"]
+    tools --> iot["IoT / 插件工具"]
 ```
 
 - 配置集中声明在 `config.yaml` 与 `data/.config.yaml`，通过 `selected_module` 选择各类服务提供者 (`config.yaml:190`).

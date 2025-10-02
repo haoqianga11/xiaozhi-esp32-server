@@ -2,6 +2,57 @@
 
 > **说明：** 详细展示从ESP32设备到AI处理再到响应的完整数据流向和处理流程。
 
+## Manager API交互概览
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant App as app.py
+    participant Loader as ConfigLoader
+    participant MAC as ManageApiClient
+    participant MA as manager-api
+    participant Conn as ConnectionHandler
+    participant Device as ESP32设备
+
+    App->>Loader: load_config()
+    Loader->>MAC: init_service(config)
+    MAC->>MA: POST /config/server-base
+    MA-->>MAC: 返回服务器基础配置
+    MAC-->>Loader: data=基础配置
+    Loader->>App: 返回合并配置
+
+    Device->>Conn: WebSocket连接 (携带 device-id / client-id)
+    Conn->>MAC: POST /config/agent-models
+    MAC->>MA: POST /config/agent-models
+    MA-->>MAC: 返回差异化配置
+    MAC-->>Conn: data=私有模块/策略
+    Conn->>Conn: 初始化 VAD / ASR / LLM / Memory / Intent
+
+    Note over Conn,MAC: read_config_from_api=true 且 chat_history_conf>0
+    loop 聊天记录上报
+        Conn->>MAC: POST /agent/chat-history/report
+        MAC->>MA: 同步 ASR/TTS 文本 + 可选音频
+        MA-->>MAC: code=0
+        MAC-->>Conn: ACK
+    end
+
+    Note over Conn,MA: save_to_file=false 时写入 manager-api
+    Conn->>MAC: PUT /agent/saveMemory/{mac}
+    MAC->>MA: 保存 summaryMemory
+    MA-->>MAC: code=0
+    MAC-->>Conn: ACK
+
+    Conn->>MAC: update_config 触发重新拉取
+    MAC->>MA: POST /config/server-base
+    MA-->>MAC: 返回最新配置
+    MAC-->>Conn: data=新配置
+    Conn->>Conn: 按需重建模块
+```
+
+- 启动阶段：`app.py` 通过 `load_config` 触发 `ManageApiClient` 请求 `/config/server-base`，并在本地合并基础配置与认证信息。
+- 设备接入：WebSocket 握手成功后，`ConnectionHandler` 调用 `/config/agent-models` 获取差异化模块、聊天策略与绑定状态。
+- 运行时上报：当 `chat_history_conf>0` 时，ASR/TTS 结果经 `/agent/chat-history/report` 回传；`save_to_file=false` 则将短期记忆写入 `/agent/saveMemory/{mac}`。
+- 动态更新：控制端推送 `update_config` 指令时，再次拉取 `/config/server-base` 并按需重建模块实例。
 ## 完整数据流序列图
 
 ```mermaid

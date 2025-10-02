@@ -113,45 +113,78 @@ graph LR
 
 ### 4. 消息路由机制
 
+系统采用两层消息路由架构，实现传输层和应用层的分离：
+
 ```mermaid
 graph TB
-    subgraph "消息输入"
+    subgraph "消息输入 - 传输层分类"
         A[ESP32设备消息]
-        B[文本消息<br/>String]
-        C[音频消息<br/>Bytes]
-        D[控制消息<br/>JSON]
+        B[字符串消息<br/>String<br/>JSON格式控制命令]
+        C[字节消息<br/>Bytes<br/>音频数据流]
     end
-    
-    subgraph "路由中心"
-        E[消息路由器<br/>MessageRouter]
+
+    subgraph "第一层路由 - 传输层路由"
+        D[_route_message<br/>connection.py:284]
     end
-    
-    subgraph "消息处理器"
-        F[文本消息处理器<br/>TextMessageHandler]
-        G[音频消息处理器<br/>AudioMessageHandler]
-        H[控制消息处理器<br/>ControlMessageHandler]
+
+    subgraph "第二层路由 - 应用层路由"
+        E[TextMessageProcessor<br/>textMessageProcessor.py]
     end
-    
+
+    subgraph "应用层消息处理器"
+        F[Hello处理器<br/>连接问候]
+        G[Abort处理器<br/>中断操作]
+        H[Listen处理器<br/>语音控制]
+        I[IoT处理器<br/>设备控制]
+        J[MCP处理器<br/>MCP协议]
+        K[Server处理器<br/>服务器管理]
+        L[音频处理器<br/>VAD/ASR处理]
+    end
+
     A --> B
     A --> C
-    A --> D
-    
-    B --> E
-    C --> E
+
+    B --> D
+    C --> D
+
     D --> E
-    
+    D --> L
+
     E --> F
     E --> G
     E --> H
-    
+    E --> I
+    E --> J
+    E --> K
+
     classDef input fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
-    classDef router fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+    classDef router1 fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+    classDef router2 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef handler fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
-    
-    class A,B,C,D input
-    class E router
-    class F,G,H handler
+
+    class A,B,C input
+    class D router1
+    class E router2
+    class F,G,H,I,J,K,L handler
 ```
+
+**消息处理流程**：
+
+1. **第一层路由**（`connection.py:_route_message`）：
+   - 字符串消息 → 转发到 `handleTextMessage()`
+   - 字节消息 → 转发到音频处理队列
+
+2. **第二层路由**（`textMessageProcessor.py`）：
+   - 解析JSON消息的 `type` 字段
+   - 路由到对应的应用层处理器
+
+3. **支持的消息类型**：
+   - `hello`: 连接建立和身份验证
+   - `abort`: 中断当前对话或操作
+   - `listen`: 语音拾音状态控制（start/stop/detect）
+   - `iot`: IoT设备控制命令
+   - `mcp`: MCP协议通信
+   - `server`: 服务器管理（重启、配置更新）
 
 ### 5. 异步任务管理层
 
